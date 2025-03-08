@@ -1,26 +1,23 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hiltAndroid)
     alias(libs.plugins.kotlinAndroidKsp)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.weather"
+    namespace = "com.weather.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.weather"
+        applicationId = "com.weather.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
     }
 
     buildTypes {
@@ -31,14 +28,9 @@ android {
                 "proguard-rules.pro"
             )
         }
-    }
-
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
+        debug {
+            buildConfigField("String", "WEATHER_API_KEY", "\"d5068f3e8e1687af8cf6645791f5adb8\"")
+        }
     }
 
     kotlinOptions {
@@ -50,7 +42,20 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
@@ -63,51 +68,32 @@ dependencies {
 
     // Core Android
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-
-    // Compose
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
-    debugImplementation(libs.androidx.ui.tooling)
-
-    // Lifecycle
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
 
-    // Coroutines
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
+    // Jetpack Compose
+    implementation(platform(libs.compose.bom))
+    implementation(libs.androidx.compose.ui.ui)
+    implementation(libs.androidx.compose.ui.ui.graphics)
+    implementation(libs.androidx.compose.ui.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3.material3)
+    implementation(libs.androidx.compose.runtime.runtime)
+    implementation(libs.androidx.compose.foundation.foundation)
+    debugImplementation(libs.androidx.compose.ui.ui.tooling)
 
-    // Dagger Hilt
+    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    implementation(libs.hilt.navigation.compose)
 
-    // Accompanist
-    implementation(libs.accompanist.permissions)
-    implementation(libs.accompanist.systemuicontroller)
-
-    // Network
-    implementation(libs.retrofit)
-    implementation(libs.com.squareup.retrofit2.converter.gson3)
-    implementation(libs.okhttp)
-    implementation(libs.logging.interceptor)
-
-    // Coil
-    implementation(libs.coil.compose)
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
 
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.ui.test.manifest)
 }

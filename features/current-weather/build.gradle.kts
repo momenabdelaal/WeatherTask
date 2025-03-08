@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hiltAndroid)
     alias(libs.plugins.kotlinAndroidKsp)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -13,14 +13,6 @@ android {
     defaultConfig {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
     buildTypes {
@@ -42,10 +34,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
 }
 
@@ -58,31 +52,34 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    debugImplementation(libs.androidx.ui.tooling)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+
+    // Location Services
+    implementation(libs.play.services.location)
+
+    // Jetpack Compose
+    implementation(platform(libs.compose.bom))
+    implementation(libs.androidx.compose.ui.ui)
+    implementation(libs.androidx.compose.ui.ui.graphics)
+    implementation(libs.androidx.compose.ui.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3.material3)
+    implementation(libs.androidx.compose.runtime.runtime)
+    implementation(libs.androidx.compose.foundation.foundation)
+    debugImplementation(libs.androidx.compose.ui.ui.tooling)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.hilt.navigation.compose)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
 
-    // Coroutines
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
-
-    // Coil for image loading
+    // Coil
     implementation(libs.coil.compose)
 
     // Testing
@@ -91,7 +88,7 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.ui.test.manifest)
 }
