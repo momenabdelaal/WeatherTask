@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Weather Details -->
+    <string name="humidity">الرطوبة</string>
+    <string name="wind_speed">سرعة الرياح</string>
+    <string name="visibility">الرؤية</string>
+    <string name="pressure">الضغط الجوي</string>
+    <string name="sea_level">مستوى البحر: %1$d hPa</string>
+    <string name="ground_level">مستوى الأرض: %1$d hPa</string>
+    <string name="pressure_value">%1$d hPa</string>
+    
+    <!-- Content Descriptions -->
+    <string name="pressure_icon_description">أيقونة الضغط الجوي</string>
+    <string name="humidity_icon_description">أيقونة الرطوبة</string>
+    <string name="wind_icon_description">أيقونة الرياح</string>
+    <string name="visibility_icon_description">أيقونة الرؤية</string>
+</resources>
