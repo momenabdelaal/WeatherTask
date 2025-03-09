@@ -46,6 +46,7 @@ android {
 dependencies {
     // Project modules
     implementation(project(":data"))
+    implementation(project(":weather-utils"))
     
     // Core Android
     implementation(libs.androidx.core.ktx)

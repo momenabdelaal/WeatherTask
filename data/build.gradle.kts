@@ -52,6 +52,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
+    implementation(project(":weather-utils"))
     ksp(libs.hilt.android.compiler)
 
     // Testing

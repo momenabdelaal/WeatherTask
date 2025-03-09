@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.weather.core.model.LocationStateImpl
 import com.weather.core.viewmodel.SharedWeatherViewModel
 import com.weather.data.api.WeatherApi
-import com.weather.data.model.HttpError
-import com.weather.data.model.NetworkError
 import com.weather.data.model.WeatherResponse
 import com.weather.data.repository.WeatherRepository
+import com.weather.utils.error.HttpError
+import com.weather.utils.error.NetworkError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*

@@ -8,10 +8,10 @@ import com.weather.core.datastore.WeatherDataStore
 import com.weather.core.location.LocationResult
 import com.weather.core.location.LocationService
 import com.weather.core.model.LocationStateImpl
-import com.weather.core.utils.ErrorHandler
-import com.weather.core.utils.LocationValidationError
 import com.weather.data.model.WeatherResponse
 import com.weather.data.repository.WeatherRepository
+import com.weather.utils.error.ErrorHandler
+import com.weather.utils.error.LocationValidationError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*

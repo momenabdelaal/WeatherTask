@@ -28,11 +28,7 @@ import com.weather.features.cityinput.presentation.CityInputScreen
 import com.weather.features.currentweather.presentation.CurrentWeatherScreen
 import com.weather.features.forecast.presentation.ForecastScreen
 
-/**
- * Extension function to handle consistent navigation behavior.
- * @param route The route to navigate to
- * @param popUpToStart Whether to pop up to the start of the navigation stack
- */
+
 private fun NavHostController.navigateToRoute(route: String, popUpToStart: Boolean = false) {
     try {
         // Only navigate if the route is valid
@@ -73,11 +69,6 @@ private fun NavHostController.navigateToDefaultRoute() {
 
 
 
-/**
- * Main navigation component for the Weather app.
- * Implements RTL support for Arabic and bottom navigation.
- * Handles navigation errors and ensures consistent route handling.
- */
 @Composable
 fun WeatherNavigation(sharedViewModel: SharedWeatherViewModel) {
     val navController = rememberNavController()
@@ -138,10 +129,9 @@ fun WeatherNavigation(sharedViewModel: SharedWeatherViewModel) {
 
 
 
-/**
- * Bottom navigation bar component.
- * Displays navigation items and handles navigation actions.
- */
+
+
+//Displays navigation items and handles navigation actions.
 @Composable
 fun WeatherBottomNavigation(
     navController: NavHostController,

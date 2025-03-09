@@ -2,7 +2,7 @@ package com.weather.app.di
 
 import android.app.Application
 import android.content.Context
-import com.weather.core.utils.ErrorHandler
+import com.weather.utils.error.ErrorHandler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

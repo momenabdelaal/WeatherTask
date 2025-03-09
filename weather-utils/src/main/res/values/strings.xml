@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Error Messages (Arabic) -->
+    <string name="error_location_generic">خطأ في تحديد الموقع</string>
+    <string name="error_weather_generic">خطأ في جلب بيانات الطقس</string>
+    <string name="error_invalid_coordinates">إحداثيات غير صالحة</string>
+    <string name="error_invalid_city_name">اسم المدينة غير صالح</string>
+    <string name="error_location_save">خطأ في حفظ بيانات الموقع</string>
+    <string name="error_network">لا يوجد اتصال بالإنترنت</string>
+    <string name="error_no_forecast_data">لا توجد بيانات متاحة للتوقعات</string>
+    <string name="error_rate_limit">تم تجاوز الحد الأقصى للطلبات</string>
+    <string name="error_unexpected">حدث خطأ غير متوقع</string>
+    <string name="error_permission">تم رفض إذن الوصول للموقع</string>
+    <string name="error_location_service">خدمة الموقع غير متاحة</string>
+    <string name="error_generic">حدث خطأ ما</string>
+</resources>

@@ -5,12 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.weather.core.model.LocationStateImpl
 import com.weather.core.viewmodel.SharedWeatherViewModel
 import com.weather.data.api.WeatherApi
-import com.weather.data.model.HttpError
-import com.weather.data.model.NetworkError
 import com.weather.data.repository.WeatherRepository
 import com.weather.features.forecast.mvi.ForecastEffect
 import com.weather.features.forecast.mvi.ForecastIntent
 import com.weather.features.forecast.mvi.ForecastState
+import com.weather.utils.error.HttpError
+import com.weather.utils.error.NetworkError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -20,9 +20,8 @@ import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
 import android.content.Context
-import com.weather.core.utils.ErrorHandler
-import com.weather.core.utils.LocationValidationError
-import com.weather.features.forecast.R
+import com.weather.utils.error.ErrorHandler
+import com.weather.utils.error.LocationValidationError
 
 // MVI ViewModel for 7-day weather forecast
 @HiltViewModel
@@ -327,4 +326,3 @@ class ForecastViewModel @Inject constructor(
 
 
 }
-

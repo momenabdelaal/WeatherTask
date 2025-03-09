@@ -1,8 +1,6 @@
 package com.weather.features.cityinput
 
 import android.app.Activity
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,9 +10,8 @@ import com.weather.core.location.LocationResult
 import com.weather.core.location.LocationService
 import com.weather.core.model.LocationState
 import com.weather.core.model.LocationStateImpl
-import com.weather.data.model.HttpError
-import com.weather.data.model.NetworkError
 import com.weather.data.repository.WeatherRepository
+import com.weather.utils.error.NetworkError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -80,7 +77,7 @@ class CityInputViewModel @Inject constructor(
                     // Handle error
                     e.printStackTrace()
                     val networkError = NetworkError.from(e)
-                    _uiState.value = CityInputUiState.Error(networkError.message ?: "حدث خطأ غير متوقة")
+                    _uiState.value = CityInputUiState.Error(networkError.message ?: "حدث خطأ غير متوقعة")
                 }
             }
         }

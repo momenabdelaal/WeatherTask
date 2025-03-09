@@ -1,4 +1,4 @@
-package com.weather.data.model
+package com.weather.utils.error
 
 import java.io.IOException
 import java.net.SocketTimeoutException

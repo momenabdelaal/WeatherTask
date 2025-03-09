@@ -4,11 +4,10 @@ import android.util.Log
 import com.weather.data.api.WeatherApi
 import com.weather.data.model.WeatherResponse
 import com.weather.data.model.ForecastResponse
+import com.weather.utils.error.NetworkError
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onStart
-import com.weather.data.model.NetworkError
 import javax.inject.Inject
 
 class WeatherRepositoryImpl @Inject constructor(
@@ -202,7 +201,7 @@ class WeatherRepositoryImpl @Inject constructor(
             
             // Validate each forecast item
             response.forecastList.forEach { forecastItem ->
-                if (forecastItem.weather.isNullOrEmpty() || forecastItem.main == null) {
+                if (forecastItem.weather.isEmpty()) {
                     throw IllegalStateException("Invalid forecast data received from API")
                 }
             }

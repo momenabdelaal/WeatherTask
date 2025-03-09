@@ -64,6 +64,9 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
     
+    // OkHttp
+    implementation(libs.okhttp)
+    
     debugImplementation(libs.ui.tooling)
     androidTestImplementation(libs.ui.test.junit4)
 

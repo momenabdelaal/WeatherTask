@@ -1,4 +1,4 @@
-package com.weather.data.model
+package com.weather.utils.error
 
 /**
  * Custom HTTP error class to handle API errors without Retrofit dependency
