@@ -155,17 +155,11 @@ class CityInputViewModel @Inject constructor(
                 .collect { result ->
                     result.fold(
                         onSuccess = { weather ->
-                            if (weather.coordinates == null || weather.name == null) {
-                                _uiState.value = CityInputState.ValidationError(
-                                    errorHandler.getLocationValidationError(LocationValidationError.LOCATION_NOT_FOUND)
-                                )
-                            } else {
-                                updateLocationState(
-                                    latitude = weather.coordinates.latitude,
-                                    longitude = weather.coordinates.longitude,
-                                    cityName = weather.name
-                                )
-                            }
+                            updateLocationState(
+                                latitude = weather.coordinates.latitude,
+                                longitude = weather.coordinates.longitude,
+                                cityName = weather.name
+                            )
                         },
                         onFailure = { error ->
                             _uiState.value = CityInputState.Error(errorHandler.getForecastError(error))

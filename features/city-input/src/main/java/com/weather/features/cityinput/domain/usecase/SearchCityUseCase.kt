@@ -40,15 +40,7 @@ class SearchCityUseCase @Inject constructor(
         }.map { result ->
             result.fold(
                 onSuccess = { weather ->
-                    if (weather.coordinates != null && weather.name != null) {
-                        Result.success(weather)
-                    } else {
-                        Result.failure(
-                            NetworkError.ValidationError(
-                                errorHandler.getLocationValidationError(LocationValidationError.LOCATION_NOT_FOUND)
-                            )
-                        )
-                    }
+                    Result.success(weather)
                 },
                 onFailure = { error ->
                     Result.failure(

@@ -19,4 +19,10 @@
     <!-- Content Descriptions -->
     <string name="search_icon_description">أيقونة البحث</string>
     <string name="location_icon_description">أيقونة الموقع</string>
+    <string name="choice_city_from_list">أو اختر مدينة من القائمة</string>
+    <string name="city_egypation_main">المدن المصرية الرئيسية</string>
+    <string name="cairo">القاهرة</string>
+    <string name="alex">الإسكندرية</string>
+    <string name="giza">الجيزة</string>
+    <string name="curren_location">استخدم موقعي الحالي</string>
 </resources>

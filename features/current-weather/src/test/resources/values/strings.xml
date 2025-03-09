@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Error Messages -->
+    <string name="error_network">لا يوجد اتصال بالإنترنت</string>
+    <string name="error_server">خطأ في الخادم</string>
+    <string name="error_timeout">انتهت مهلة الطلب</string>
+    <string name="error_unknown">حدث خطأ غير متوقع</string>
+    <string name="error_location_unavailable">موقعك غير متاح</string>
+    <string name="error_location_permission">يرجى منح إذن الموقع</string>
+    <string name="error_invalid_location">موقع غير صالح</string>
+    <string name="error_no_weather_data">لا توجد بيانات طقس متاحة</string>
+    
+    <!-- Weather Information -->
+    <string name="weather_temperature">درجة الحرارة: %1$s°</string>
+    <string name="weather_feels_like">يشعر وكأنه: %1$s°</string>
+    <string name="weather_humidity">الرطوبة: %1$d%%</string>
+    <string name="weather_wind_speed">سرعة الرياح: %1$s كم/س</string>
+    <string name="weather_pressure">الضغط الجوي: %1$d هكتوباسكال</string>
+</resources>

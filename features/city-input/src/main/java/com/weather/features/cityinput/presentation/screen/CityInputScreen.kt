@@ -31,12 +31,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.weather.core.location.LocationPermissionHelper
 import com.weather.core.ui.components.LoadingState
 import com.weather.core.viewmodel.SharedWeatherViewModel
+import com.weather.features.cityinput.R
 import com.weather.features.cityinput.domain.model.CityInputEvent
 import com.weather.features.cityinput.domain.model.CityInputState
 import com.weather.features.cityinput.presentation.viewmodel.CityInputViewModel
@@ -183,7 +185,7 @@ fun CityInputScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "أو اختر مدينة من القائمة",
+                text = stringResource(R.string.choice_city_from_list),
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -203,14 +205,14 @@ fun CityInputScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "المدن المصرية الرئيسية",
+                    text = stringResource(R.string.city_egypation_main),
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 EgyptianCityCard(
-                    cityName = "القاهرة",
+                    cityName = stringResource(R.string.cairo),
                     latitude = 30.0444,
                     longitude = 31.2357,
                     onCitySelected = { lat, lon, name ->
@@ -219,7 +221,7 @@ fun CityInputScreen(
                 )
 
                 EgyptianCityCard(
-                    cityName = "الإسكندرية",
+                    cityName = stringResource(R.string.alex),
                     latitude = 31.2001,
                     longitude = 29.9187,
                     onCitySelected = { lat, lon, name ->
@@ -228,7 +230,7 @@ fun CityInputScreen(
                 )
 
                 EgyptianCityCard(
-                    cityName = "الجيزة",
+                    cityName = stringResource(R.string.giza),
                     latitude = 30.0131,
                     longitude = 31.2089,
                     onCitySelected = { lat, lon, name ->
@@ -259,7 +261,7 @@ private fun CurrentLocationButton(
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "استخدم موقعي الحالي")
+            Text(text = stringResource(R.string.curren_location))
         }
     }
 }

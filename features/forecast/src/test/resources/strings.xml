@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Test Error Messages (Arabic) -->
+    <string name="error_loading">تحميل...</string>
+    <string name="error_no_forecast">لا توجد توقعات متاحة</string>
+    <string name="error_forecast_generic">خطأ في جلب التوقعات</string>
+    <string name="error_location_generic">خطأ في تحديد الموقع</string>
+    <string name="error_invalid_coordinates">إحداثيات غير صالحة</string>
+    <string name="error_network">لا يوجد اتصال بالإنترنت</string>
+
+    <!-- Test Weather Labels (Arabic) -->
+    <string name="label_humidity">الرطوبة</string>
+    <string name="label_wind_speed">سرعة الرياح</string>
+    <string name="label_temperature">درجة الحرارة</string>
+    <string name="label_feels_like">الإحساس كأنها</string>
+</resources>
