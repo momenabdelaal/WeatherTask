@@ -70,20 +70,20 @@ class CityInputViewModel @Inject constructor(
 
     private fun restoreLastLocation() {
         viewModelScope.launch {
-            try {
-                // Try SavedStateHandle first for better UX
-                val latitude = savedStateHandle.get<Double>(KEY_LATITUDE)
-                val longitude = savedStateHandle.get<Double>(KEY_LONGITUDE)
-                val cityName = savedStateHandle.get<String>(KEY_CITY_NAME)
+            // Try SavedStateHandle first for better UX
+            val latitude = savedStateHandle.get<Double>(KEY_LATITUDE)
+            val longitude = savedStateHandle.get<Double>(KEY_LONGITUDE)
+            val cityName = savedStateHandle.get<String>(KEY_CITY_NAME)
 
-                if (latitude != null && longitude != null && cityName != null) {
-                    updateLocationState(latitude, longitude, cityName)
-                } else {
-                    // Try DataStore if not in SavedStateHandle
+            if (latitude != null && longitude != null && cityName != null) {
+                updateLocationState(latitude, longitude, cityName)
+            } else {
+                // Try DataStore if not in SavedStateHandle
+                try {
                     dataStore.getLastLocation()
-                        .filterNotNull()
-                        .catch { e -> 
-                            _uiState.value = CityInputState.Error(errorHandler.getForecastError(e))
+                        .catch { 
+                            // Set Initial state on error instead of propagating it
+                            _uiState.value = CityInputState.Initial
                         }
                         .collect { location ->
                             when (location) {
@@ -94,12 +94,14 @@ class CityInputViewModel @Inject constructor(
                                         cityName = location.cityName
                                     )
                                 }
+                                null -> _uiState.value = CityInputState.Initial
                                 else -> _uiState.value = CityInputState.Initial
                             }
                         }
+                } catch (e: Exception) {
+                    // Set Initial state on any error
+                    _uiState.value = CityInputState.Initial
                 }
-            } catch (e: Exception) {
-                _uiState.value = CityInputState.Error(errorHandler.getForecastError(e))
             }
         }
     }
@@ -176,26 +178,27 @@ class CityInputViewModel @Inject constructor(
     }
 
     private suspend fun updateLocationState(latitude: Double, longitude: Double, cityName: String) {
-        try {
-            val locationState = LocationStateImpl.Available(
-                latitude = latitude,
-                longitude = longitude,
-                cityName = cityName
-            )
+        val locationState = LocationStateImpl.Available(
+            latitude = latitude,
+            longitude = longitude,
+            cityName = cityName
+        )
 
-            // Save to DataStore for persistence
-            dataStore.saveLastLocation(locationState)
-            
-            // Save to SavedStateHandle for process death
-            savedStateHandle[KEY_LATITUDE] = latitude
-            savedStateHandle[KEY_LONGITUDE] = longitude
-            savedStateHandle[KEY_CITY_NAME] = cityName
-            
-            // Update UI state
-            _uiState.value = CityInputState.Success(locationState)
-        } catch (e: Exception) {
-            _uiState.value = CityInputState.Error(errorHandler.getForecastError(e))
-        }
+        // Save to DataStore for persistence
+        dataStore.saveLastLocation(locationState).fold(
+            onSuccess = {
+                // Save to SavedStateHandle for process death
+                savedStateHandle[KEY_LATITUDE] = latitude
+                savedStateHandle[KEY_LONGITUDE] = longitude
+                savedStateHandle[KEY_CITY_NAME] = cityName
+                
+                // Update UI state
+                _uiState.value = CityInputState.Success(locationState)
+            },
+            onFailure = { error ->
+                _uiState.value = CityInputState.Error(errorHandler.getForecastError(error))
+            }
+        )
     }
 
     fun getLocationPermissionState(activity: Activity) = locationPermissionHelper.getLocationPermissionState()
