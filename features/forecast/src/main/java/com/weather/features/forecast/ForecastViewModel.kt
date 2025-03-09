@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.weather.core.model.LocationStateImpl
 import com.weather.core.viewmodel.SharedWeatherViewModel
 import com.weather.data.api.WeatherApi
-import com.weather.data.model.ForecastResponse
 import com.weather.data.model.HttpError
 import com.weather.data.model.NetworkError
 import com.weather.data.repository.WeatherRepository
+import com.weather.features.forecast.mvi.ForecastEffect
+import com.weather.features.forecast.mvi.ForecastIntent
+import com.weather.features.forecast.mvi.ForecastState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -17,29 +19,72 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
+import android.content.Context
+import com.weather.core.utils.ErrorHandler
+import com.weather.core.utils.LocationValidationError
+import com.weather.features.forecast.R
 
+// MVI ViewModel for 7-day weather forecast
 @HiltViewModel
 class ForecastViewModel @Inject constructor(
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    context: Context
 ) : ViewModel() {
 
-    // MVI State
+    private val errorHandler = ErrorHandler(context)
+
+
+
+    // MVI State Management
     private val _state = MutableStateFlow(ForecastState())
     val state: StateFlow<ForecastState> = _state.asStateFlow()
 
-    // MVI Side Effects
+    // Side Effects
     private val _effect = Channel<ForecastEffect>()
     val effect = _effect.receiveAsFlow()
     
+    // Async Operations
     private var weatherUpdateJob: Job? = null
+    private var locationUpdateJob: Job? = null
+
+    // State Updates
+    private fun updateToLoadingState() = _state.update { 
+        it.copy(
+            isLoading = true,
+            error = null,
+            forecast = null
+        )
+    }
+
+    private fun updateToErrorState(message: String) = _state.update {
+        it.copy(
+            isLoading = false,
+            error = message,
+            forecast = null
+        )
+    }
+
+    private suspend fun handleError(error: Throwable, clearLocation: Boolean = true) {
+        val errorMessage = errorHandler.getForecastError(error)
+        updateToErrorState(errorMessage)
+        if (clearLocation) {
+            _state.update { it.copy(lastLocation = null) }
+        }
+        _effect.send(ForecastEffect.Error(error))
+    }
 
     override fun onCleared() {
         super.onCleared()
-        // Cancel any ongoing jobs
-        locationUpdateJob?.cancel()
-        locationUpdateJob = null
+        cleanup()
+    }
+
+    // Cleanup resources
+    private fun cleanup() {
+        // Cancel jobs
         weatherUpdateJob?.cancel()
+        locationUpdateJob?.cancel()
         weatherUpdateJob = null
+        locationUpdateJob = null
         
         // Reset state
         _state.update { 
@@ -51,66 +96,43 @@ class ForecastViewModel @Inject constructor(
             )
         }
         
-        // Close the effect channel
+        // Close channel
         _effect.close()
     }
 
 
-    // MVI Intents
+    // Process user intents
     fun processIntent(intent: ForecastIntent) {
         when (intent) {
             is ForecastIntent.RefreshForecast -> {
                 // Update state immediately to reflect new location
-                _state.update { 
-                    it.copy(
-                        isLoading = true,
-                        error = null,
-                        forecast = null,
-                        lastLocation = intent.location
-                    )
-                }
+                updateToLoadingState()
+                _state.update { it.copy(lastLocation = intent.location) }
                 fetchForecast(intent.location)
             }
             ForecastIntent.RetryLastFetch -> {
                 val lastLocation = state.value.lastLocation
                 if (lastLocation is LocationStateImpl.Available) {
                     // Reset error state before retrying
-                    _state.update { 
-                        it.copy(
-                            isLoading = true,
-                            error = null,
-                            forecast = null
-                        )
-                    }
+                    updateToLoadingState()
                     fetchForecast(lastLocation)
                 } else {
-                    val errorMessage = "لم يتم تحديد موقع سابق"
-                    _state.update { 
-                        it.copy(
-                            isLoading = false,
-                            error = errorMessage,
-                            forecast = null,
-                            lastLocation = null
-                        )
-                    }
                     viewModelScope.launch {
-                        _effect.send(ForecastEffect.Error(IllegalStateException(errorMessage)))
+                        handleError(IllegalStateException("No previous location"))
                     }
                 }
             }
         }
     }
 
-    private var locationUpdateJob: Job? = null
-    
     fun observeLocationUpdates(sharedViewModel: SharedWeatherViewModel) {
-        // Cancel any existing location update job
+        // Cancel active jobs
         locationUpdateJob?.cancel()
         weatherUpdateJob?.cancel()
         
         locationUpdateJob = viewModelScope.launch {
             try {
-                // Reset state when starting to observe
+                // Reset to initial state
                 _state.update { 
                     it.copy(
                         isLoading = true,
@@ -120,23 +142,11 @@ class ForecastViewModel @Inject constructor(
                     )
                 }
                 
-                // Observe both location state and error
+                // Watch location updates
                 sharedViewModel.locationState.combine(sharedViewModel.locationError) { location, error ->
                     if (error != null) {
-                        val errorMessage = when {
-                            error.contains("permission", ignoreCase = true) -> "يرجى منح إذن الموقع"
-                            error.contains("disabled", ignoreCase = true) -> "يرجى تفعيل خدمات الموقع"
-                            else -> error
-                        }
-                        _state.update { 
-                            it.copy(
-                                isLoading = false,
-                                error = errorMessage,
-                                forecast = null,
-                                lastLocation = null
-                            )
-                        }
-                        _effect.send(ForecastEffect.Error(IllegalStateException(errorMessage)))
+                        val errorMessage = errorHandler.getLocationError(IllegalStateException(error))
+                        handleError(IllegalStateException(error))
                     } else {
                         // Process the location update as a refresh intent
                         processIntent(ForecastIntent.RefreshForecast(location))
@@ -144,25 +154,15 @@ class ForecastViewModel @Inject constructor(
                 }.collect()
             } catch (e: Exception) {
                 e.printStackTrace()
-                val errorMessage = when (e) {
-                    is NetworkError -> WeatherApi.ERROR_NETWORK
-                    else -> "حدث خطأ في مراقبة الموقع"
-                }
-                _state.update { 
-                    it.copy(
-                        isLoading = false,
-                        error = errorMessage,
-                        forecast = null,
-                        lastLocation = null
-                    )
-                }
-                _effect.send(ForecastEffect.Error(e))
+                // Map error types
+                handleError(e)
             }
         }
     }
 
+
     private fun fetchForecast(location: LocationStateImpl) {
-        // Cancel any existing weather update job to avoid multiple parallel requests
+        // Prevent parallel requests
         weatherUpdateJob?.cancel()
         
         weatherUpdateJob = viewModelScope.launch {
@@ -172,17 +172,10 @@ class ForecastViewModel @Inject constructor(
                         val latitude = location.latitude
                         val longitude = location.longitude
                         
-                        if (latitude < WeatherApi.MIN_LATITUDE || latitude > WeatherApi.MAX_LATITUDE || longitude < WeatherApi.MIN_LONGITUDE || longitude > WeatherApi.MAX_LONGITUDE) {
-                            val errorMessage = WeatherApi.ERROR_INVALID_COORDINATES
-                            _state.update { 
-                                it.copy(
-                                    isLoading = false,
-                                    error = errorMessage,
-                                    forecast = null,
-                                    lastLocation = null
-                                )
-                            }
-                            _effect.send(ForecastEffect.Error(IllegalArgumentException(errorMessage)))
+                        if (!isValidCoordinates(latitude, longitude)) {
+                            errorHandler.getLocationValidationError(
+                                LocationValidationError.INVALID_COORDINATES)
+                            handleError(IllegalArgumentException("Invalid coordinates"))
                             return@launch
                         }
                         
@@ -203,17 +196,8 @@ class ForecastViewModel @Inject constructor(
                             result.fold(
                                 onSuccess = { forecast ->
                                     if (forecast.forecastList.isEmpty()) {
-                                        val errorMessage = "لا توجد بيانات توقعات متاحة"
-                                        _state.update { 
-                                            it.copy(
-                                                isLoading = false,
-                                                error = errorMessage,
-                                                forecast = null,
-                                                lastLocation = null
-                                            )
-                                        }
                                         viewModelScope.launch {
-                                            _effect.send(ForecastEffect.Error(IllegalStateException(errorMessage)))
+                                            handleError(IllegalStateException("No forecast data"))
                                         }
                                         return@fold
                                     }
@@ -242,24 +226,15 @@ class ForecastViewModel @Inject constructor(
                                             }
                                     } catch (e: Exception) {
                                         e.printStackTrace()
-                                        val errorMessage = "حدث خطأ في معالجة بيانات التوقعات"
-                                        _state.update { 
-                                            it.copy(
-                                                isLoading = false,
-                                                error = errorMessage,
-                                                forecast = null,
-                                                lastLocation = null
-                                            )
-                                        }
                                         viewModelScope.launch {
-                                            _effect.send(ForecastEffect.Error(e))
+                                            handleError(e)
                                         }
                                         emptyList()
                                     }
 
                                     when {
                                         sevenDayForecast.isEmpty() -> {
-                                            val errorMessage = "لا توجد بيانات توقعات متاحة"
+                                            val errorMessage = errorHandler.getForecastError(IllegalStateException("Empty forecast data"))
                                             _state.update { 
                                                 it.copy(
                                                     isLoading = false,
@@ -273,7 +248,7 @@ class ForecastViewModel @Inject constructor(
                                             }
                                         }
                                         sevenDayForecast.any { it.weather.isEmpty() } -> {
-                                            val errorMessage = "بيانات التوقعات غير مكتملة"
+                                            val errorMessage = errorHandler.getForecastError(IllegalStateException("Incomplete forecast data"))
                                             _state.update { 
                                                 it.copy(
                                                     isLoading = false,
@@ -302,31 +277,8 @@ class ForecastViewModel @Inject constructor(
                                     }
                                 },
                                 onFailure = { error ->
-                                    val errorMessage = when (error) {
-                                        is NetworkError -> when (error) {
-                                            is NetworkError.ApiError -> when (error.code) {
-                                                401 -> WeatherApi.ERROR_API_KEY
-                                                404 -> "لا توجد بيانات توقعات متاحة"
-                                                429 -> "تم تجاوز حد الطلبات"
-                                                500, 502, 503, 504 -> WeatherApi.ERROR_SERVER
-                                                else -> error.message
-                                            }
-                                            is NetworkError.NoInternet -> WeatherApi.ERROR_NETWORK
-                                            else -> error.message ?: "حدث خطأ غير متوقع"
-                                        }
-                                        is HttpError -> NetworkError.ApiError(error.code).message ?: WeatherApi.ERROR_SERVER
-                                        else -> NetworkError.from(error).message ?: "حدث خطأ غير متوقع"
-                                    }
-                                    _state.update { 
-                                        it.copy(
-                                            isLoading = false,
-                                            error = errorMessage,
-                                            forecast = null,
-                                            lastLocation = null
-                                        )
-                                    }
                                     viewModelScope.launch {
-                                        _effect.send(ForecastEffect.Error(error))
+                                        handleError(error)
                                     }
                                 }
                             )
@@ -336,11 +288,8 @@ class ForecastViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = true, error = null) }
                     }
                     is LocationStateImpl.Unavailable -> {
-                        _state.update { 
-                            it.copy(
-                                isLoading = false,
-                                error = "الرجاء تحديد موقعك أو اختيار مدينة"
-                            )
+                        viewModelScope.launch {
+                            handleError(IllegalStateException("Location required"), clearLocation = false)
                         }
                     }
                 }
@@ -370,24 +319,12 @@ class ForecastViewModel @Inject constructor(
             }
         }
     }
+
+    // Validate coordinate bounds
+    private fun isValidCoordinates(latitude: Double, longitude: Double): Boolean =
+        latitude in WeatherApi.MIN_LATITUDE..WeatherApi.MAX_LATITUDE &&
+        longitude in WeatherApi.MIN_LONGITUDE..WeatherApi.MAX_LONGITUDE
+
+
 }
 
-// MVI State
-data class ForecastState(
-    val isLoading: Boolean = false,
-    val forecast: ForecastResponse? = null,
-    val error: String? = null,
-    val lastLocation: LocationStateImpl? = null
-)
-
-// MVI Intent
-sealed interface ForecastIntent {
-    data class RefreshForecast(val location: LocationStateImpl) : ForecastIntent
-    data object RetryLastFetch : ForecastIntent
-}
-
-// MVI Effect
-sealed interface ForecastEffect {
-    data object DataRefreshed : ForecastEffect
-    data class Error(val throwable: Throwable) : ForecastEffect
-}

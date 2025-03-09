@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Error Messages -->
+    <string name="error_permission">يرجى منح إذن الموقع</string>
+    <string name="error_location_service">خدمات الموقع غير متوفرة</string>
+    <string name="error_generic">حدث خطأ في مراقبة الموقع</string>
+    <string name="error_no_previous_location">لم يتم تحديد موقع سابق</string>
+    <string name="error_no_forecast_data">لا توجد بيانات توقعات متاحة</string>
+    <string name="error_processing_forecast">حدث خطأ في معالجة بيانات التوقعات</string>
+    <string name="error_incomplete_forecast">بيانات التوقعات غير مكتملة</string>
+    <string name="error_unexpected">حدث خطأ غير متوقع</string>
+    <string name="error_rate_limit">تم تجاوز حد الطلبات</string>
+    <string name="error_location_required">الرجاء تحديد موقعك أو اختيار مدينة</string>
+</resources>

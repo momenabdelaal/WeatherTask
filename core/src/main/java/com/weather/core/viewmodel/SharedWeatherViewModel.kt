@@ -1,54 +1,61 @@
 package com.weather.core.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.weather.core.R
 import com.weather.core.datastore.WeatherDataStore
 import com.weather.core.location.LocationResult
 import com.weather.core.location.LocationService
-import com.weather.core.model.LocationState
 import com.weather.core.model.LocationStateImpl
 import com.weather.core.utils.ErrorHandler
 import com.weather.core.utils.LocationValidationError
-import com.weather.data.model.NetworkError
 import com.weather.data.model.WeatherResponse
 import com.weather.data.repository.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// Shared ViewModel for location and weather management using MVVM
 @HiltViewModel
 class SharedWeatherViewModel @Inject constructor(
     private val locationService: LocationService,
     private val weatherDataStore: WeatherDataStore,
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    private val errorHandler: ErrorHandler,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    // Location state flow
     private val _locationState = MutableStateFlow<LocationStateImpl>(LocationStateImpl.Loading)
     val locationState: StateFlow<LocationStateImpl> = _locationState.asStateFlow()
 
     private val _locationError = MutableStateFlow<String?>(null)
     val locationError: StateFlow<String?> = _locationError.asStateFlow()
     
+    // Weather data state
     private val _weatherState = MutableStateFlow<WeatherResponse?>(null)
     val weatherState: StateFlow<WeatherResponse?> = _weatherState.asStateFlow()
 
     private val _weatherError = MutableStateFlow<String?>(null)
     val weatherError: StateFlow<String?> = _weatherError.asStateFlow()
 
+    // Initialize states and restore last location
     init {
         // Restore last location from DataStore
         viewModelScope.launch {
             try {
                 resetStates()
                 
-                // Try to restore last location
+                // Get last location
                 restoreLastLocation()
                 
                 weatherDataStore.getLastLocation()
                     .catch { e -> 
                         e.printStackTrace()
-                        _locationError.emit(ErrorHandler.getLocationError(e))
+                        _locationError.emit(errorHandler.getLocationError(e))
                         emit(LocationStateImpl.Unavailable)
                     }
                     .collect { location ->
@@ -61,7 +68,7 @@ class SharedWeatherViewModel @Inject constructor(
                                     _locationState.emit(location)
                                     fetchWeatherData(latitude, longitude)
                                 } else {
-                                    _locationError.emit("بيانات الموقع غير صالحة")
+                                    _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
                                     _locationState.emit(LocationStateImpl.Unavailable)
                                 }
                             }
@@ -72,8 +79,7 @@ class SharedWeatherViewModel @Inject constructor(
                     }
             } catch (e: Exception) {
                 e.printStackTrace()
-                val networkError = NetworkError.from(e)
-                _locationError.emit(networkError.message ?: "حدث خطأ غير متوقع")
+                _locationError.emit(errorHandler.getLocationError(e))
                 _locationState.emit(LocationStateImpl.Unavailable)
                 _weatherState.emit(null)
                 _weatherError.emit(null)
@@ -81,6 +87,7 @@ class SharedWeatherViewModel @Inject constructor(
         }
     }
 
+    // Reset states and cleanup
     fun cleanup() {
         viewModelScope.launch {
             resetStates()
@@ -93,6 +100,7 @@ class SharedWeatherViewModel @Inject constructor(
         cleanup()
     }
 
+    // Update location and fetch weather
     fun updateLocation(latitude: Double, longitude: Double, cityName: String) {
         viewModelScope.launch {
             try {
@@ -108,9 +116,9 @@ class SharedWeatherViewModel @Inject constructor(
                     cityName = cityName
                 )
                 
-                // Update state and persist
+                // Save and update
                 if (saveLocationState(state)) {
-                    // Only fetch weather if location was saved successfully
+                    // Get weather if location saved
                     fetchWeatherData(latitude, longitude)
                 }
             } catch (e: Exception) {
@@ -119,15 +127,16 @@ class SharedWeatherViewModel @Inject constructor(
         }
     }
 
+    // Validate location coordinates and city name
     private suspend fun validateLocationInput(latitude: Double, longitude: Double, cityName: String): Boolean {
         if (!isValidCoordinates(latitude, longitude)) {
-            _locationError.emit("إحداثيات غير صالحة")
+            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
             _locationState.emit(LocationStateImpl.Unavailable)
             return false
         }
         
         if (cityName.isBlank()) {
-            _locationError.emit(ErrorHandler.getLocationValidationError(LocationValidationError.INVALID_CITY_NAME))
+            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_CITY_NAME))
             _locationState.emit(LocationStateImpl.Unavailable)
             return false
         }
@@ -135,13 +144,14 @@ class SharedWeatherViewModel @Inject constructor(
         return true
     }
 
+
     private suspend fun saveLocationState(state: LocationStateImpl.Available): Boolean {
         return try {
             _locationState.emit(state)
             
             weatherDataStore.saveLastLocation(state).onFailure { e ->
                 e.printStackTrace()
-                _locationError.emit(ErrorHandler.getLocationValidationError(LocationValidationError.SAVE_ERROR))
+                _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.SAVE_ERROR))
                 _locationState.emit(LocationStateImpl.Unavailable)
                 return false
             }
@@ -149,22 +159,23 @@ class SharedWeatherViewModel @Inject constructor(
             true
         } catch (e: Exception) {
             e.printStackTrace()
-            _locationError.emit("حدث خطأ في حفظ الموقع")
+            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.SAVE_ERROR))
             _locationState.emit(LocationStateImpl.Unavailable)
             false
         }
     }
 
+
     private fun fetchWeatherData(latitude: Double, longitude: Double) {
         viewModelScope.launch {
             try {
                 if (!isValidCoordinates(latitude, longitude)) {
-                    _weatherError.emit(ErrorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
+                    _weatherError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
                     _weatherState.emit(null)
                     return@launch
                 }
                 
-                // Clear previous error state and set loading
+                // Clear and load
                 _weatherError.emit(null)
                 _weatherState.emit(null)
                 
@@ -184,25 +195,27 @@ class SharedWeatherViewModel @Inject constructor(
         }
     }
 
+    // Handle successful weather response
     private suspend fun handleWeatherSuccess(weather: WeatherResponse) {
         if (weather.hasValidWeatherData()) {
             _weatherState.emit(weather)
             _weatherError.emit(null)
         } else {
-            _weatherError.emit("لا توجد بيانات طقس متاحة")
+            _weatherError.emit(errorHandler.getWeatherError(IllegalStateException("No weather data available")))
             _weatherState.emit(null)
         }
     }
 
+    // Handle weather fetch errors
     private suspend fun handleWeatherError(error: Throwable) {
         error.printStackTrace()
-        _weatherError.emit(ErrorHandler.getWeatherError(error))
+        _weatherError.emit(errorHandler.getWeatherError(error))
         _weatherState.emit(null)
     }
 
     fun handleLocationPermissionDenied() {
         viewModelScope.launch {
-            _locationError.emit("تم رفض إذن الموقع. لن نتمكن من جلب موقعك الحالي.")
+            _locationError.emit(errorHandler.getLocationError(SecurityException("Location permission denied")))
             _locationState.emit(LocationStateImpl.Unavailable)
             _weatherState.emit(null)
             _weatherError.emit(null)
@@ -228,8 +241,7 @@ class SharedWeatherViewModel @Inject constructor(
 
     private suspend fun handleLocationError(error: Throwable) {
         error.printStackTrace()
-        val networkError = NetworkError.from(error)
-        _locationError.emit(networkError.message ?: "حدث خطأ في استعادة الموقع")
+        _locationError.emit(errorHandler.getLocationError(error))
         _locationState.emit(LocationStateImpl.Unavailable)
     }
 
@@ -243,7 +255,7 @@ class SharedWeatherViewModel @Inject constructor(
                     _locationState.emit(location)
                     fetchWeatherData(latitude, longitude)
                 } else {
-                    _locationError.emit("بيانات الموقع غير صالحة")
+                    _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
                     _locationState.emit(LocationStateImpl.Unavailable)
                 }
             }
@@ -267,7 +279,7 @@ class SharedWeatherViewModel @Inject constructor(
     fun getCurrentLocation() {
         viewModelScope.launch {
             try {
-                // Reset all states
+                // Reset states
                 _locationState.emit(LocationStateImpl.Loading)
                 _locationError.emit(null)
                 _weatherError.emit(null)
@@ -277,16 +289,16 @@ class SharedWeatherViewModel @Inject constructor(
                     is LocationResult.Success -> {
                         val latitude = result.latitude
                         val longitude = result.longitude
-                        val cityName = result.cityName.takeIf { it.isNotBlank() } ?: "موقعك الحالي"
+                        val cityName = result.cityName.takeIf { it.isNotBlank() } ?: context.getString(R.string.current_location)
                         
-                        // Validate coordinates
+                        // Check coordinates
                         if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-                            _locationError.emit("إحداثيات غير صالحة")
+                            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
                             _locationState.emit(LocationStateImpl.Unavailable)
                             return@launch
                         }
                         
-                        // Update location and fetch weather
+                        // Update and fetch
                         updateLocation(
                             latitude = latitude,
                             longitude = longitude,
@@ -296,11 +308,11 @@ class SharedWeatherViewModel @Inject constructor(
                     is LocationResult.Error -> {
                         val errorMessage = when (result) {
                             LocationResult.Error.PermissionDenied -> 
-                                "يرجى منح إذن الموقع للحصول على الطقس في موقعك الحالي"
+                                errorHandler.getLocationError(SecurityException("Location permission denied"))
                             LocationResult.Error.LocationDisabled -> 
-                                "يرجى تمكين خدمات الموقع للحصول على الطقس في موقعك الحالي"
+                                errorHandler.getLocationError(IllegalStateException("Location services disabled"))
                             is LocationResult.Error.ServiceError -> 
-                                "حدث خطأ أثناء الحصول على موقعك: ${result.message ?: "خطأ غير معروف"}"
+                                errorHandler.getLocationError(IllegalStateException(result.message ?: "Unknown error"))
                         }
                         _locationError.emit(errorMessage)
                         _locationState.emit(LocationStateImpl.Unavailable)
@@ -308,8 +320,7 @@ class SharedWeatherViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                val networkError = NetworkError.from(e)
-                _locationError.emit(networkError.message ?: "حدث خطأ غير متوقع")
+                _locationError.emit(errorHandler.getLocationError(e))
                 _locationState.emit(LocationStateImpl.Unavailable)
                 _weatherState.emit(null)
                 _weatherError.emit(null)

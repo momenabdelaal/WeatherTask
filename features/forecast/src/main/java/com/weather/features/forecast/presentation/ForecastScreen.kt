@@ -44,12 +44,14 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+// Main forecast screen with MVI pattern and Arabic support
 @Composable
 fun ForecastScreen(
     modifier: Modifier = Modifier,
     viewModel: ForecastViewModel = hiltViewModel(),
     sharedViewModel: SharedWeatherViewModel = hiltViewModel()
 ) {
+    // Start location updates
     LaunchedEffect(Unit) {
         viewModel.observeLocationUpdates(sharedViewModel)
     }
@@ -57,7 +59,7 @@ fun ForecastScreen(
     WeatherTheme {
         val state by viewModel.state.collectAsState()
 
-        // Map ViewModel state to UI state
+        // Map to UI state
         val uiState = when {
             state.isLoading -> ForecastUiState.Loading
             state.error != null -> ForecastUiState.Error(state.error!!)
@@ -65,13 +67,14 @@ fun ForecastScreen(
             else -> ForecastUiState.Loading
         }
 
-        // Force RTL layout for Arabic support
+        // RTL for Arabic
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
             Box(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
+                // Handle UI states
                 when (uiState) {
                     is ForecastUiState.Loading -> com.weather.core.ui.components.LoadingState()
                     is ForecastUiState.Error -> com.weather.core.ui.components.ErrorState(uiState.message)
@@ -84,6 +87,7 @@ fun ForecastScreen(
 
 
 
+// Display forecast data
 @Composable
 private fun ForecastContent(forecast: ForecastResponse) {
     Column(
@@ -95,6 +99,8 @@ private fun ForecastContent(forecast: ForecastResponse) {
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Render forecast items in a scrollable list
+            // Each item is independent and maintains its own state
             items(forecast.forecastList) { forecastItem ->
                 ForecastItemCard(forecastItem)
             }
@@ -102,6 +108,7 @@ private fun ForecastContent(forecast: ForecastResponse) {
     }
 }
 
+// Weather card with details
 @Composable
 private fun ForecastItemCard(forecastItem: ForecastItem) {
     Card(
@@ -113,7 +120,8 @@ private fun ForecastItemCard(forecastItem: ForecastItem) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Date and time
+            // Convert UTC timestamp to local date/time
+            // This ensures correct time display based on user's timezone
             val dateTime = LocalDateTime.ofInstant(
                 Instant.ofEpochSecond(forecastItem.dateTime),
                 ZoneId.systemDefault()
@@ -128,7 +136,8 @@ private fun ForecastItemCard(forecastItem: ForecastItem) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Weather icon and description
+            // Weather overview section
+            // Displays current conditions with icon from OpenWeatherMap API
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -166,7 +175,9 @@ private fun ForecastItemCard(forecastItem: ForecastItem) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Additional weather details
+            // Detailed weather metrics section
+            // Shows all available weather data in a structured format
+            // Optional values are only shown when available
             WeatherDetailsCard {
                 WeatherDetailRow("الرطوبة", "${forecastItem.main.humidity}%")
                 WeatherDetailRow("الضغط", "${forecastItem.main.pressure} hPa")

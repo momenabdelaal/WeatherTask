@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic Errors -->
+    <string name="error_generic">حدث خطأ في مراقبة الموقع</string>
+    <string name="error_unexpected">حدث خطأ غير متوقع</string>
+    <string name="error_network">لا يوجد اتصال بالإنترنت</string>
+
+    <!-- Location Errors -->
+    <string name="error_location_generic">حدث خطأ في استعادة الموقع</string>
+    <string name="error_location_service">خدمات الموقع غير متوفرة</string>
+    <string name="error_location_required">الرجاء تحديد موقعك أو اختيار مدينة</string>
+    <string name="error_location_save">حدث خطأ في حفظ الموقع</string>
+    <string name="error_permission">يرجى منح إذن الموقع</string>
+
+    <!-- Validation Errors -->
+    <string name="error_invalid_coordinates">إحداثيات غير صالحة</string>
+    <string name="error_invalid_city_name">اسم المدينة غير صالح</string>
+
+    <!-- Weather Errors -->
+    <string name="error_weather_generic">حدث خطأ في جلب بيانات الطقس</string>
+    <string name="error_no_forecast_data">لا توجد بيانات توقعات متاحة</string>
+    <string name="error_processing_forecast">حدث خطأ في معالجة بيانات التوقعات</string>
+    <string name="error_incomplete_forecast">بيانات التوقعات غير مكتملة</string>
+    <string name="error_rate_limit">تم تجاوز حد الطلبات</string>
+
+    <!-- Location Labels -->
+    <string name="current_location">موقعك الحالي</string>
+</resources>

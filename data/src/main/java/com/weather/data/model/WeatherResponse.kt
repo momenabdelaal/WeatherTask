@@ -2,6 +2,7 @@ package com.weather.data.model
 
 import com.google.gson.annotations.SerializedName
 
+
 data class WeatherResponse(
     @SerializedName("coord") val coordinates: CoordinatesData,
     @SerializedName("weather") val weather: List<WeatherData> = emptyList(),
@@ -17,23 +18,21 @@ data class WeatherResponse(
     @SerializedName("name") val name: String,
     @SerializedName("cod") val cod: Int
 ) {
-    /**
-     * Checks if this weather response contains valid weather data
-     */
-    fun hasValidWeatherData(): Boolean = 
-        coordinates.isValid() && 
-        weather.isNotEmpty() && 
-        main != null && 
-        main.isValid() && 
-        wind.isValid()
+
+    fun hasValidWeatherData(): Boolean =
+        coordinates.isValid() &&
+                weather.isNotEmpty() && main.isValid() && wind.isValid()
 }
+
 
 data class CoordinatesData(
     @SerializedName("lon") val longitude: Double,
     @SerializedName("lat") val latitude: Double
 ) {
+
     fun isValid(): Boolean = latitude in -90.0..90.0 && longitude in -180.0..180.0
 }
+
 
 data class WeatherData(
     @SerializedName("id") val id: Int,
@@ -41,6 +40,7 @@ data class WeatherData(
     @SerializedName("description") val description: String,
     @SerializedName("icon") val icon: String
 )
+
 
 data class MainData(
     @SerializedName("temp") val temperature: Double,
@@ -57,6 +57,7 @@ data class MainData(
         const val MAX_TEMP = 100.0  // Highest recorded temperature on Earth is around 56.7°C
     }
     
+
     fun isValid(): Boolean =
         // Check temperature ranges
         temperature in MIN_TEMP..MAX_TEMP &&
@@ -70,17 +71,21 @@ data class MainData(
         pressure > 0 // Pressure should always be positive
 }
 
+
 data class WindData(
     @SerializedName("speed") val speed: Double,
     @SerializedName("deg") val degree: Int,
     @SerializedName("gust") val gust: Double?
 ) {
+
     fun isValid(): Boolean = speed >= 0 && degree in 0..360
 }
+
 
 data class Clouds(
     @SerializedName("all") val all: Int
 )
+
 
 data class Sys(
     @SerializedName("type") val type: Int?,

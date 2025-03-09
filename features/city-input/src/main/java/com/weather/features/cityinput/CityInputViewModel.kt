@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// MVVM ViewModel for city search and location input
 @HiltViewModel
 class CityInputViewModel @Inject constructor(
     private val weatherRepository: WeatherRepository,
@@ -32,14 +33,14 @@ class CityInputViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<CityInputUiState>(CityInputUiState.Initial)
     val uiState: StateFlow<CityInputUiState> = _uiState.asStateFlow()
 
-    // Use LocationStateImpl for all operations to ensure type safety
+    // Convert to implementation type
     private fun LocationState.toImpl(): LocationStateImpl = when (this) {
         is LocationStateImpl -> this
-        else -> LocationStateImpl.Unavailable // This should never happen as we control all LocationState instances
+        else -> LocationStateImpl.Unavailable // Default fallback
     }
 
     init {
-        // Try to restore from SavedStateHandle first
+        // Restore saved state
         val latitude = savedStateHandle.get<Double>(KEY_LATITUDE)
         val longitude = savedStateHandle.get<Double>(KEY_LONGITUDE)
         val cityName = savedStateHandle.get<String>(KEY_CITY_NAME)
@@ -52,19 +53,19 @@ class CityInputViewModel @Inject constructor(
             )
             _uiState.value = CityInputUiState.LocationUpdated(locationState)
         } else {
-            // If not in SavedStateHandle, try to restore from DataStore
+            // Try DataStore if not in state
             viewModelScope.launch {
                 try {
                     dataStore.getLastLocation()
                         .filterNotNull()
                         .catch { e -> 
-                            // Log error but don't propagate
+                            // Handle error quietly
                             e.printStackTrace()
                             val networkError = NetworkError.from(e)
                             _uiState.value = CityInputUiState.Error(networkError.message ?: "حدث خطأ غير متوقع")
                         }
                         .collect { location ->
-                            // Convert to LocationStateImpl and save to SavedStateHandle
+                            // Save location state
                             val locationImpl = location.toImpl()
                             locationImpl.asAvailable?.let { available ->
                                 savedStateHandle[KEY_LATITUDE] = available.latitude
@@ -72,11 +73,11 @@ class CityInputViewModel @Inject constructor(
                                 savedStateHandle[KEY_CITY_NAME] = available.cityName
                             }
                             
-                            // Update UI with the implementation
+                            // Update UI
                             _uiState.value = CityInputUiState.LocationUpdated(locationImpl)
                         }
                 } catch (e: Exception) {
-                    // Handle any unexpected errors with user feedback
+                    // Handle error
                     e.printStackTrace()
                     val networkError = NetworkError.from(e)
                     _uiState.value = CityInputUiState.Error(networkError.message ?: "حدث خطأ غير متوقة")
@@ -152,21 +153,21 @@ class CityInputViewModel @Inject constructor(
                                     )
                                     
                                     try {
-                                        // Save to DataStore first
+                                        // Save to storage
                                         dataStore.saveLastLocation(locationState)
                                         
-                                        // Then save to SavedStateHandle
+                                        // Update state
                                         locationState.asAvailable?.let { available ->
                                             savedStateHandle[KEY_LATITUDE] = available.latitude
                                             savedStateHandle[KEY_LONGITUDE] = available.longitude
                                             savedStateHandle[KEY_CITY_NAME] = available.cityName
                                         }
                                     } catch (e: Exception) {
-                                        // Log error but continue with UI update
+                                        // Skip error
                                         e.printStackTrace()
                                     }
                                     
-                                    // Finally update UI with the implementation
+                                    // Update UI
                                     _uiState.value = CityInputUiState.LocationUpdated(locationState as LocationStateImpl)
                                 } catch (e: Exception) {
                                     val networkError = NetworkError.from(e)
@@ -189,7 +190,7 @@ class CityInputViewModel @Inject constructor(
     fun selectCity(latitude: Double, longitude: Double, cityName: String) {
         viewModelScope.launch {
             try {
-                // Save to SavedStateHandle first
+                // Save location state
                 val locationState = LocationStateImpl.available(
                     latitude = latitude,
                     longitude = longitude,
@@ -271,6 +272,7 @@ class CityInputViewModel @Inject constructor(
     }
 }
 
+// MVVM UI states
 sealed class CityInputUiState {
     data object Initial : CityInputUiState()
     data object Loading : CityInputUiState()

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// MVVM ViewModel for current weather
 @HiltViewModel
 class CurrentWeatherViewModel @Inject constructor(
     private val weatherRepository: WeatherRepository
@@ -22,6 +23,7 @@ class CurrentWeatherViewModel @Inject constructor(
     
     private var weatherUpdateJob: Job? = null
     
+    // Map errors to Arabic messages
     private fun getErrorMessage(error: Throwable): String = when (error) {
         is NetworkError -> when (error) {
             is NetworkError.ApiError -> when (error.code) {
@@ -42,10 +44,11 @@ class CurrentWeatherViewModel @Inject constructor(
     val uiState: StateFlow<CurrentWeatherUiState> = _uiState.asStateFlow()
 
     init {
-        // Reset state when ViewModel is created
+        // Init loading state
         _uiState.value = CurrentWeatherUiState.Loading
     }
 
+    // Watch location changes and fetch weather
     fun observeWeatherUpdates(sharedViewModel: SharedWeatherViewModel) {
         weatherUpdateJob?.cancel()
         
@@ -99,13 +102,14 @@ class CurrentWeatherViewModel @Inject constructor(
     
     override fun onCleared() {
         super.onCleared()
-        // Cancel any ongoing job and reset state
+        // Cleanup
         weatherUpdateJob?.cancel()
         weatherUpdateJob = null
         _uiState.value = CurrentWeatherUiState.Loading
     }
 }
 
+// MVVM UI states
 sealed class CurrentWeatherUiState {
     data object Loading : CurrentWeatherUiState()
     data class Success(val weather: WeatherResponse) : CurrentWeatherUiState()
