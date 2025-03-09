@@ -50,7 +50,7 @@ class CityInputViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        
+
         getLocationUseCase = mockk()
         searchCityUseCase = mockk()
         locationPermissionHelper = mockk(relaxed = true)
@@ -61,7 +61,7 @@ class CityInputViewModelTest {
         // Mock dataStore methods with null initial state
         coEvery { dataStore.saveLastLocation(any()) } returns Result.success(Unit)
        // every { dataStore.getLastLocation() } returns flowOf(null)
-        
+
         // Mock error handler with Arabic error messages
         every { errorHandler.getForecastError(any()) } returns "خطأ في التنبؤ"
         every { errorHandler.getLocationError(any<SecurityException>()) } returns "يرجى منح إذن الموقع"
@@ -140,7 +140,7 @@ class CityInputViewModelTest {
     fun `when searching empty city name, should emit validation error state`() = runTest {
         // Given
         val emptyQuery = ""
-        val errorMessage = "اسم المدينة مطلوب"
+        val errorMessage = "اسم المدينة مطلوب test"
         every { errorHandler.getLocationValidationError(LocationValidationError.EMPTY_LOCATION) } returns errorMessage
 
         // When
@@ -157,7 +157,7 @@ class CityInputViewModelTest {
             every { coordinates } returns CoordinatesData(TEST_LONGITUDE, TEST_LATITUDE)
             every { name } returns TEST_CITY
         }
-        
+
         coEvery { searchCityUseCase(TEST_CITY) } returns flowOf(Result.success(weather))
 
         // When
@@ -165,7 +165,7 @@ class CityInputViewModelTest {
 
         // Then
         coVerify(exactly = 1) { searchCityUseCase(TEST_CITY) }
-        coVerify(exactly = 1) { 
+        coVerify(exactly = 1) {
             dataStore.saveLastLocation(match { location ->
                 location is LocationStateImpl.Available &&
                 location.latitude == TEST_LATITUDE &&
@@ -212,7 +212,7 @@ class CityInputViewModelTest {
 
         // Then
         coVerify(exactly = 1) { getLocationUseCase() }
-        coVerify(exactly = 1) { 
+        coVerify(exactly = 1) {
             dataStore.saveLastLocation(match { location ->
                 location is LocationStateImpl.Available &&
                 location.latitude == TEST_LATITUDE &&
@@ -237,7 +237,7 @@ class CityInputViewModelTest {
         viewModel.handleEvent(CityInputEvent.RequestLocationPermission(activity))
 
         // Then
-        verify(exactly = 1) { 
+        verify(exactly = 1) {
             locationPermissionHelper.requestLocationPermission(activity, LOCATION_PERMISSION_REQUEST_CODE)
         }
     }
@@ -283,7 +283,7 @@ class CityInputViewModelTest {
         }
         val errorMessage = "خطأ في حفظ الموقع"
         val saveError = Exception("Save failed")
-        
+
         coEvery { searchCityUseCase(TEST_CITY) } returns flowOf(Result.success(weather))
         coEvery { dataStore.saveLastLocation(any()) } returns Result.failure(saveError)
         every { errorHandler.getForecastError(saveError) } returns errorMessage
