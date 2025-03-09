@@ -4,28 +4,28 @@ An Android application that provides current weather information and future fore
 ## Features
 - Search cities and view current weather conditions
 - Display 7-day weather forecast
-- Save last searched city
+- Save last searched city using DataStore
 - Dark mode support
-- Full Arabic localization
+- Full Arabic localization and error messages
 
 ## Architecture
 
 ### Architectural Patterns
-- **City Input Screen**: MVVM
-- **Current Weather Display**: MVVM
-- **Forecast List**: MVI
+- **City Input Screen**: MVVM with StateFlow
+- **Current Weather Display**: MVVM with StateFlow
+- **Forecast List**: MVI with Side Effects
 
 ### Clean Architecture
 ```
 app/                    # Main Application
 ├── core/              # Shared Components
-│   ├── common/       # Common Utilities
-│   ├── ui/          # UI Components
+│   ├── datastore/    # DataStore Implementation
+│   ├── location/     # Location Services
 │   └── network/     # Network Components
 │
 ├── data/             # Data Layer
-│   ├── remote/      # Remote Data Source
-│   ├── local/       # Local Storage
+│   ├── remote/      # OpenWeather API Integration
+│   ├── model/       # Data Models
 │   └── repository/  # Repositories
 │
 ├── features/         # Features
@@ -33,16 +33,18 @@ app/                    # Main Application
 │   ├── current-weather/ # Current Weather (MVVM)
 │   └── forecast/    # Forecast (MVI)
 │
-└── weather-utils/   # Custom Weather Formatting Library
+└── weather-utils/   # Error Handling & Theme
+    ├── error/      # Centralized Error Handling
+    └── theme/     # Theme Configuration
 ```
 
 ## Tech Stack
 - **UI**: Jetpack Compose
 - **Dependency Injection**: Dagger Hilt
 - **Data Processing**: Kotlin Coroutines + Flow
-- **Local Storage**: Room Database
+- **Local Storage**: DataStore
 - **Networking**: Retrofit + OkHttp
-- **Unit Testing**: JUnit + Mockito/MockK
+- **Unit Testing**: JUnit + MockK
 - **UI Testing**: Compose Testing
 
 ## Code Quality
@@ -56,50 +58,46 @@ app/                    # Main Application
 ### Branch Strategy
 - `master`: Production-ready code
   * Protected branch
-  * Requires PR approval
-  * Auto-generates release APK
-  * Tagged for releases
+  * Requires test passing
+  * Generates debug APK
 - `development`: Integration branch
   * Feature branches merge here
   * Automated tests run
   * Debug APK generated
 
-### Automated Checks
-1. **Code Quality**
+### Automated Pipeline
+1. **Test Stage**
+   - Runs City Input module tests
+   - Generates test reports
+   - Uploads test results as artifacts
    ```bash
-   ./gradlew ktlintCheck     # Code style
-   ./gradlew lint           # Android lint
+   ./gradlew :features:city-input:test
    ```
 
-2. **Testing**
+2. **Build Stage**
+   - Requires successful test stage
+   - Configures JDK 17 environment
+   - Sets up Weather API key securely
+   - Builds debug APK
    ```bash
-   ./gradlew test          # Unit tests
+   ./gradlew assembleDebug
    ```
 
-3. **Build Verification**
-   - Debug APK for development
-   - Release APK for master
+### Artifacts
+- Test Results
+  * Available for 7 days
+  * Located in `features/city-input/build/reports/tests/`
+- Build Artifacts
+  * Debug APK
+  * Build reports
+  * Feature module reports
+  * 7-day retention period
 
-### CI/CD Steps
-1. **Code Verification**
-   - Kotlin style checks
-   - Android lint analysis
-   - Build validation
-
-2. **Automated Tests**
-   - Unit tests
-   - Test reports generated
-   - Coverage reports
-
-3. **Build Process**
-   - Debug APK (development)
-   - Release APK (master)
-   - Build artifacts stored
-
-4. **Release Process**
-   - Automatic versioning
-   - GitHub release creation
-   - APK artifact upload
+### Environment Setup
+- Ubuntu latest runner
+- JDK 17 (Temurin distribution)
+- Gradle build action
+- Secure secrets management for API keys
 
 ## Development
 
@@ -122,11 +120,13 @@ app/                    # Main Application
    ```
 
 ### Custom Library (weather-utils)
-A custom library for weather data processing:
-- Temperature formatting
-- Weather code to icon conversion
-- Error handling
-- Arabic localization support
+A custom library for error handling and theming:
+- Centralized error handling
+- Arabic error messages
+- Network error handling
+- Location permission handling
+- Theme configuration
+- Dark mode support
 
 Publishing the library:
 ```bash
@@ -139,3 +139,24 @@ Publishing the library:
 3. Make your changes
 4. Ensure tests pass and code is linted
 5. Submit a pull request
+
+## Error Handling
+### Centralized Error System (weather-utils)
+1. **HttpError**
+   - Custom exception class for API errors
+   - Handles common HTTP status codes (401, 404, 429, 500, 502, 503, 504)
+   - Independent of Retrofit implementation
+
+2. **NetworkError**
+   - Sealed class hierarchy for network-related errors
+   - NoInternet: For connectivity issues
+   - Timeout: For request timeouts
+   - ServerError: For server-side issues
+   - ApiError: For HTTP-specific errors
+   - Unknown: For unhandled cases
+
+3. **ErrorHandler**
+   - Provides user-friendly Arabic error messages
+   - Handles location, weather, and forecast-specific errors
+   - Includes validation error handling
+   - Centralizes all error message strings in R.string resources
