@@ -18,6 +18,13 @@ An Android application that provides current weather information and future fore
 ### Clean Architecture
 ```
 app/                    # Main Application
+│   ├── di/           # App-level Dependency Injection
+│   ├── navigation/   # Navigation Components
+│   │   ├── WeatherNavigation  # Navigation Setup
+│   │   └── BottomNavItem      # Bottom Navigation
+│   ├── MainActivity  # Main Activity
+│   └── WeatherApp    # Application Class
+│
 ├── core/              # Shared Components
 │   ├── datastore/    # DataStore Implementation
 │   ├── location/     # Location Services
@@ -36,6 +43,29 @@ app/                    # Main Application
 └── weather-utils/   # Error Handling & Theme
     ├── error/      # Centralized Error Handling
     └── theme/     # Theme Configuration
+```
+
+## Navigation
+
+### Bottom Navigation
+- Implemented using Jetpack Navigation
+- Bottom navigation bar with:
+  * City Search
+  * Current Weather
+  * 7-Day Forecast
+
+### Navigation Components
+- Single Activity Architecture
+- Type-safe navigation using sealed classes
+- Handles deep linking
+- Preserves state during navigation
+
+### Screen Flow
+```
+City Input ──> Current Weather ──> Forecast
+    │               │                │
+    └───────────────┴────────────────┘
+         Bottom Navigation Bar
 ```
 
 ## Tech Stack
