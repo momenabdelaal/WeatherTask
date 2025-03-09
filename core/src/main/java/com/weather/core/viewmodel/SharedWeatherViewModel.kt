@@ -12,13 +12,13 @@ import com.weather.data.model.WeatherResponse
 import com.weather.data.repository.WeatherRepository
 import com.weather.utils.error.ErrorHandler
 import com.weather.utils.error.LocationValidationError
+import com.weather.utils.error.NetworkError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Shared ViewModel for location and weather management using MVVM
 @HiltViewModel
 class SharedWeatherViewModel @Inject constructor(
     private val locationService: LocationService,
@@ -28,70 +28,63 @@ class SharedWeatherViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // Location state flow
     private val _locationState = MutableStateFlow<LocationStateImpl>(LocationStateImpl.Loading)
     val locationState: StateFlow<LocationStateImpl> = _locationState.asStateFlow()
 
     private val _locationError = MutableStateFlow<String?>(null)
     val locationError: StateFlow<String?> = _locationError.asStateFlow()
     
-    // Weather data state
     private val _weatherState = MutableStateFlow<WeatherResponse?>(null)
     val weatherState: StateFlow<WeatherResponse?> = _weatherState.asStateFlow()
 
     private val _weatherError = MutableStateFlow<String?>(null)
     val weatherError: StateFlow<String?> = _weatherError.asStateFlow()
 
-    // Initialize states and restore last location
     init {
-        // Restore last location from DataStore
+        restoreLastLocation()
+    }
+
+    private fun restoreLastLocation() {
         viewModelScope.launch {
             try {
                 resetStates()
-                
-                // Get last location
-                restoreLastLocation()
+                _locationState.emit(LocationStateImpl.Loading)
                 
                 weatherDataStore.getLastLocation()
                     .catch { e -> 
-                        e.printStackTrace()
-                        _locationError.emit(errorHandler.getLocationError(e))
-                        emit(LocationStateImpl.Unavailable)
+                        handleLocationError(e)
                     }
                     .collect { location ->
                         when (location) {
                             is LocationStateImpl.Available -> {
-                                val latitude = location.latitude
-                                val longitude = location.longitude
-                                
-                                if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+                                if (isValidCoordinates(location.latitude, location.longitude)) {
                                     _locationState.emit(location)
-                                    fetchWeatherData(latitude, longitude)
+                                    fetchWeatherData(location.latitude, location.longitude)
                                 } else {
                                     _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
                                     _locationState.emit(LocationStateImpl.Unavailable)
                                 }
                             }
-                            else -> {
-                                _locationState.emit(location)
-                            }
+                            else -> _locationState.emit(location)
                         }
                     }
             } catch (e: Exception) {
-                e.printStackTrace()
-                _locationError.emit(errorHandler.getLocationError(e))
-                _locationState.emit(LocationStateImpl.Unavailable)
-                _weatherState.emit(null)
-                _weatherError.emit(null)
+                handleLocationError(e)
             }
         }
     }
 
-    // Reset states and cleanup
     fun cleanup() {
         viewModelScope.launch {
             resetStates()
             _locationState.emit(LocationStateImpl.Unavailable)
+        }
+    }
+
+    fun clearErrors() {
+        viewModelScope.launch {
+            _locationError.emit(null)
+            _weatherError.emit(null)
         }
     }
 
@@ -100,7 +93,75 @@ class SharedWeatherViewModel @Inject constructor(
         cleanup()
     }
 
-    // Update location and fetch weather
+    fun getCurrentLocation() {
+        viewModelScope.launch {
+            try {
+                resetStates()
+                _locationState.emit(LocationStateImpl.Loading)
+                
+                when (val result = locationService.getCurrentLocation()) {
+                    is LocationResult.Success -> {
+                        if (isValidCoordinates(result.latitude, result.longitude)) {
+                            val cityName = result.cityName.takeIf { it.isNotBlank() } 
+                                ?: context.getString(R.string.current_location)
+                                
+                            updateLocation(
+                                latitude = result.latitude,
+                                longitude = result.longitude,
+                                cityName = cityName
+                            )
+                        } else {
+                            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
+                            _locationState.emit(LocationStateImpl.Unavailable)
+                        }
+                    }
+                    is LocationResult.Error -> {
+                        when (result) {
+                            LocationResult.Error.PermissionDenied -> 
+                                handleLocationPermissionDenied()
+                            LocationResult.Error.LocationDisabled -> 
+                                handleLocationError(IllegalStateException())
+                            is LocationResult.Error.ServiceError -> 
+                                handleLocationError(IllegalStateException(result.message))
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                handleLocationError(e)
+            }
+        }
+    }
+
+    fun handleLocationPermissionDenied() {
+        viewModelScope.launch {
+            try {
+                resetStates()
+                _locationError.emit(errorHandler.getLocationError(SecurityException("Location permission denied")))
+                _locationState.emit(LocationStateImpl.Unavailable)
+            } catch (e: Exception) {
+                handleLocationError(e)
+            }
+        }
+    }
+
+    private fun resetStates() {
+        viewModelScope.launch {
+            _locationError.emit(null)
+            _weatherError.emit(null)
+            _weatherState.emit(null)
+        }
+    }
+
+    private fun handleLocationError(error: Throwable) {
+        viewModelScope.launch {
+            val errorMessage = errorHandler.getLocationError(error)
+            _locationError.emit(errorMessage)
+            _locationState.emit(LocationStateImpl.Unavailable)
+            _weatherState.emit(null)
+            _weatherError.emit(null)
+        }
+    }
+
     fun updateLocation(latitude: Double, longitude: Double, cityName: String) {
         viewModelScope.launch {
             try {
@@ -116,9 +177,7 @@ class SharedWeatherViewModel @Inject constructor(
                     cityName = cityName
                 )
                 
-                // Save and update
                 if (saveLocationState(state)) {
-                    // Get weather if location saved
                     fetchWeatherData(latitude, longitude)
                 }
             } catch (e: Exception) {
@@ -127,7 +186,6 @@ class SharedWeatherViewModel @Inject constructor(
         }
     }
 
-    // Validate location coordinates and city name
     private suspend fun validateLocationInput(latitude: Double, longitude: Double, cityName: String): Boolean {
         if (!isValidCoordinates(latitude, longitude)) {
             _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
@@ -136,14 +194,13 @@ class SharedWeatherViewModel @Inject constructor(
         }
         
         if (cityName.isBlank()) {
-            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_CITY_NAME))
+            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.EMPTY_LOCATION))
             _locationState.emit(LocationStateImpl.Unavailable)
             return false
         }
         
         return true
     }
-
 
     private suspend fun saveLocationState(state: LocationStateImpl.Available): Boolean {
         return try {
@@ -165,7 +222,6 @@ class SharedWeatherViewModel @Inject constructor(
         }
     }
 
-
     private fun fetchWeatherData(latitude: Double, longitude: Double) {
         viewModelScope.launch {
             try {
@@ -175,156 +231,35 @@ class SharedWeatherViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Clear and load
                 _weatherError.emit(null)
                 _weatherState.emit(null)
                 
                 weatherRepository.getCurrentWeather(
                     latitude = latitude,
-                    longitude = longitude,
-                    language = "ar"
-                ).collect { result ->
+                    longitude = longitude
+                ).catch { error ->
+                    _weatherError.emit(errorHandler.getForecastError(error))
+                    _weatherState.emit(null)
+                }.collect { result ->
                     result.fold(
-                        onSuccess = { weather -> handleWeatherSuccess(weather) },
-                        onFailure = { error -> handleWeatherError(error) }
+                        onSuccess = { weather ->
+                            _weatherState.emit(weather)
+                            _weatherError.emit(null)
+                        },
+                        onFailure = { error ->
+                            _weatherError.emit(errorHandler.getForecastError(error))
+                            _weatherState.emit(null)
+                        }
                     )
                 }
             } catch (e: Exception) {
-                handleWeatherError(e)
-            }
-        }
-    }
-
-    // Handle successful weather response
-    private suspend fun handleWeatherSuccess(weather: WeatherResponse) {
-        if (weather.hasValidWeatherData()) {
-            _weatherState.emit(weather)
-            _weatherError.emit(null)
-        } else {
-            _weatherError.emit(errorHandler.getWeatherError(IllegalStateException("No weather data available")))
-            _weatherState.emit(null)
-        }
-    }
-
-    // Handle weather fetch errors
-    private suspend fun handleWeatherError(error: Throwable) {
-        error.printStackTrace()
-        _weatherError.emit(errorHandler.getWeatherError(error))
-        _weatherState.emit(null)
-    }
-
-    fun handleLocationPermissionDenied() {
-        viewModelScope.launch {
-            _locationError.emit(errorHandler.getLocationError(SecurityException("Location permission denied")))
-            _locationState.emit(LocationStateImpl.Unavailable)
-            _weatherState.emit(null)
-            _weatherError.emit(null)
-        }
-    }
-
-    private suspend fun resetStates() {
-        _locationState.emit(LocationStateImpl.Loading)
-        _locationError.emit(null)
-        _weatherError.emit(null)
-        _weatherState.emit(null)
-    }
-
-    private suspend fun restoreLastLocation() {
-        weatherDataStore.getLastLocation()
-            .catch { e -> 
-                handleLocationError(e)
-            }
-            .collect { location ->
-                handleLocationState(location)
-            }
-    }
-
-    private suspend fun handleLocationError(error: Throwable) {
-        error.printStackTrace()
-        _locationError.emit(errorHandler.getLocationError(error))
-        _locationState.emit(LocationStateImpl.Unavailable)
-    }
-
-    private suspend fun handleLocationState(location: LocationStateImpl) {
-        when (location) {
-            is LocationStateImpl.Available -> {
-                val latitude = location.latitude
-                val longitude = location.longitude
-                
-                if (isValidCoordinates(latitude, longitude)) {
-                    _locationState.emit(location)
-                    fetchWeatherData(latitude, longitude)
-                } else {
-                    _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
-                    _locationState.emit(LocationStateImpl.Unavailable)
-                }
-            }
-            else -> _locationState.emit(location)
-        }
-    }
-
-    private fun isValidCoordinates(latitude: Double?, longitude: Double?): Boolean {
-        return latitude != null && longitude != null &&
-               latitude >= -90 && latitude <= 90 &&
-               longitude >= -180 && longitude <= 180
-    }
-
-    fun clearErrors() {
-        viewModelScope.launch {
-            _locationError.emit(null)
-            _weatherError.emit(null)
-        }
-    }
-
-    fun getCurrentLocation() {
-        viewModelScope.launch {
-            try {
-                // Reset states
-                _locationState.emit(LocationStateImpl.Loading)
-                _locationError.emit(null)
-                _weatherError.emit(null)
+                _weatherError.emit(errorHandler.getForecastError(e))
                 _weatherState.emit(null)
-                
-                when (val result = locationService.getCurrentLocation()) {
-                    is LocationResult.Success -> {
-                        val latitude = result.latitude
-                        val longitude = result.longitude
-                        val cityName = result.cityName.takeIf { it.isNotBlank() } ?: context.getString(R.string.current_location)
-                        
-                        // Check coordinates
-                        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-                            _locationError.emit(errorHandler.getLocationValidationError(LocationValidationError.INVALID_COORDINATES))
-                            _locationState.emit(LocationStateImpl.Unavailable)
-                            return@launch
-                        }
-                        
-                        // Update and fetch
-                        updateLocation(
-                            latitude = latitude,
-                            longitude = longitude,
-                            cityName = cityName
-                        )
-                    }
-                    is LocationResult.Error -> {
-                        val errorMessage = when (result) {
-                            LocationResult.Error.PermissionDenied -> 
-                                errorHandler.getLocationError(SecurityException("Location permission denied"))
-                            LocationResult.Error.LocationDisabled -> 
-                                errorHandler.getLocationError(IllegalStateException("Location services disabled"))
-                            is LocationResult.Error.ServiceError -> 
-                                errorHandler.getLocationError(IllegalStateException(result.message ?: "Unknown error"))
-                        }
-                        _locationError.emit(errorMessage)
-                        _locationState.emit(LocationStateImpl.Unavailable)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _locationError.emit(errorHandler.getLocationError(e))
-                _locationState.emit(LocationStateImpl.Unavailable)
-                _weatherState.emit(null)
-                _weatherError.emit(null)
             }
         }
+    }
+
+    private fun isValidCoordinates(latitude: Double, longitude: Double): Boolean {
+        return latitude in -90.0..90.0 && longitude in -180.0..180.0
     }
 }

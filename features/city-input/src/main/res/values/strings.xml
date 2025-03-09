@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- City Input -->
+    <string name="search_city_hint">ابحث عن مدينة</string>
+    <string name="current_location">موقعك الحالي</string>
+    <string name="unknown_city">مدينة غير معروفة</string>
+    
+    <!-- Location Permission -->
+    <string name="location_permission_required">نحتاج إلى إذن الموقع للحصول على موقعك الحالي</string>
+    <string name="location_settings_required">يرجى تفعيل خدمات الموقع</string>
+    <string name="enable_location">تفعيل الموقع</string>
+    <string name="grant_permission">منح الإذن</string>
+    
+    <!-- Validation Messages -->
+    <string name="invalid_city_name">اسم المدينة غير صالح</string>
+    <string name="city_not_found">لم يتم العثور على المدينة</string>
+    <string name="location_not_available">لا يمكن الوصول إلى الموقع الحالي</string>
+    
+    <!-- Content Descriptions -->
+    <string name="search_icon_description">أيقونة البحث</string>
+    <string name="location_icon_description">أيقونة الموقع</string>
+</resources>

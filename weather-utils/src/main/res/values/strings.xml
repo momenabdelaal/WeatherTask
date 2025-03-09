@@ -5,6 +5,8 @@
     <string name="error_weather_generic">خطأ في جلب بيانات الطقس</string>
     <string name="error_invalid_coordinates">إحداثيات غير صالحة</string>
     <string name="error_invalid_city_name">اسم المدينة غير صالح</string>
+    <string name="error_empty_location">الرجاء إدخال اسم المدينة</string>
+    <string name="error_location_not_found">لم يتم العثور على المدينة</string>
     <string name="error_location_save">خطأ في حفظ بيانات الموقع</string>
     <string name="error_network">لا يوجد اتصال بالإنترنت</string>
     <string name="error_no_forecast_data">لا توجد بيانات متاحة للتوقعات</string>

@@ -1,4 +1,4 @@
-package com.weather.features.forecast.presentation
+package com.weather.features.forecast.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,14 +28,12 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.weather.core.ui.components.ErrorState
-import com.weather.core.ui.components.LoadingState
 import com.weather.core.ui.components.WeatherDetailRow
 import com.weather.core.ui.components.WeatherDetailsCard
 import com.weather.core.viewmodel.SharedWeatherViewModel
 import com.weather.data.model.ForecastItem
-import com.weather.data.model.ForecastResponse
-import com.weather.features.forecast.ForecastViewModel
+import com.weather.data.model.City
+import com.weather.features.forecast.presentation.viewmodel.ForecastViewModel
 import com.weather.features.forecast.components.ForecastHeader
 import com.weather.utils.theme.WeatherTheme
 import java.time.Instant
@@ -63,7 +61,8 @@ fun ForecastScreen(
         val uiState = when {
             state.isLoading -> ForecastUiState.Loading
             state.error != null -> ForecastUiState.Error(state.error!!)
-            state.forecast != null -> ForecastUiState.Success(state.forecast!!)
+            state.forecastItems.isNotEmpty() && state.city != null -> 
+                ForecastUiState.Success(state.forecastItems, state.city!!)
             else -> ForecastUiState.Loading
         }
 
@@ -78,22 +77,26 @@ fun ForecastScreen(
                 when (uiState) {
                     is ForecastUiState.Loading -> com.weather.core.ui.components.LoadingState()
                     is ForecastUiState.Error -> com.weather.core.ui.components.ErrorState(uiState.message)
-                    is ForecastUiState.Success -> ForecastContent(uiState.forecast)
+                    is ForecastUiState.Success -> ForecastContent(
+                        forecastItems = uiState.forecastItems,
+                        city = uiState.city
+                    )
                 }
             }
         }
     }
 }
 
-
-
 // Display forecast data
 @Composable
-private fun ForecastContent(forecast: ForecastResponse) {
+private fun ForecastContent(
+    forecastItems: List<ForecastItem>,
+    city: City
+) {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        ForecastHeader(forecast.city.name)
+        ForecastHeader(city.name)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -101,7 +104,7 @@ private fun ForecastContent(forecast: ForecastResponse) {
         ) {
             // Render forecast items in a scrollable list
             // Each item is independent and maintains its own state
-            items(forecast.forecastList) { forecastItem ->
+            items(forecastItems) { forecastItem ->
                 ForecastItemCard(forecastItem)
             }
         }
@@ -195,5 +198,3 @@ private fun ForecastItemCard(forecastItem: ForecastItem) {
         }
     }
 }
-
-

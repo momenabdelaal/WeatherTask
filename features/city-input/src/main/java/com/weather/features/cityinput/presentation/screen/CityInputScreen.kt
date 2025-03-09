@@ -1,4 +1,4 @@
-package com.weather.features.cityinput.presentation
+package com.weather.features.cityinput.presentation.screen
 
 import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
@@ -37,9 +37,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.weather.core.location.LocationPermissionHelper
 import com.weather.core.ui.components.LoadingState
 import com.weather.core.viewmodel.SharedWeatherViewModel
-import com.weather.features.cityinput.CityInputUiState
-import com.weather.features.cityinput.CityInputViewModel
-import com.weather.features.cityinput.components.*
+import com.weather.features.cityinput.domain.model.CityInputEvent
+import com.weather.features.cityinput.domain.model.CityInputState
+import com.weather.features.cityinput.presentation.viewmodel.CityInputViewModel
+import com.weather.features.cityinput.components.CitySearchField
+import com.weather.features.cityinput.components.CitySearchStatus
+import com.weather.features.cityinput.components.DeniedPermissionCard
+import com.weather.features.cityinput.components.LocationDisabledCard
+import com.weather.features.cityinput.components.PermissionRationaleCard
 
 @ExperimentalMaterial3Api
 @Composable
@@ -72,22 +77,22 @@ fun CityInputScreen(
             when (val permissionState = viewModel.getLocationPermissionState(act)) {
                 is LocationPermissionHelper.PermissionState.Granted -> {
                     CurrentLocationButton(
-                        onClick = { viewModel.getCurrentLocation() }
+                        onClick = { viewModel.handleEvent(CityInputEvent.GetCurrentLocation) }
                     )
                 }
                 is LocationPermissionHelper.PermissionState.LocationDisabled -> {
                     LocationDisabledCard(
-                        onEnableLocation = { viewModel.openLocationSettings(act) }
+                        onEnableLocation = { viewModel.handleEvent(CityInputEvent.OpenLocationSettings(act)) }
                     )
                 }
                 is LocationPermissionHelper.PermissionState.ShowRationale -> {
                     PermissionRationaleCard(
-                        onRequestPermission = { viewModel.requestLocationPermission(act) }
+                        onRequestPermission = { viewModel.handleEvent(CityInputEvent.RequestLocationPermission(act)) }
                     )
                 }
                 is LocationPermissionHelper.PermissionState.Denied -> {
                     DeniedPermissionCard(
-                        onRequestPermission = { viewModel.requestLocationPermission(act) },
+                        onRequestPermission = { viewModel.handleEvent(CityInputEvent.RequestLocationPermission(act)) },
                         onOpenSettings = { viewModel.openAppSettings(act) }
                     )
                 }
@@ -99,12 +104,12 @@ fun CityInputScreen(
         CitySearchField(
             query = searchQuery,
             onQueryChange = { searchQuery = it },
-            onSearch = { viewModel.searchCity(searchQuery) }
+            onSearch = { viewModel.handleEvent(CityInputEvent.SearchCity(searchQuery)) }
         )
 
         // Status messages
         when (uiState) {
-            is CityInputUiState.Loading -> {
+            is CityInputState.Loading -> {
                 Card(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -114,23 +119,56 @@ fun CityInputScreen(
                     )
                 }
             }
-            is CityInputUiState.Error -> {
+            is CityInputState.Error -> {
                 Card(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     CitySearchStatus(
-                        message = (uiState as CityInputUiState.Error).message,
+                        message = (uiState as CityInputState.Error).message,
                         isError = true,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
             }
-            is CityInputUiState.LocationUpdated -> {
+            is CityInputState.ValidationError -> {
                 Card(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     CitySearchStatus(
-                        message = "تم تحديث الموقع إلى: ${(uiState as CityInputUiState.LocationUpdated).location.cityName}",
+                        message = (uiState as CityInputState.ValidationError).message,
+                        isError = true,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+            is CityInputState.PermissionRequired -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CitySearchStatus(
+                        message = (uiState as CityInputState.PermissionRequired).message,
+                        isError = true,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+            is CityInputState.LocationDisabled -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CitySearchStatus(
+                        message = (uiState as CityInputState.LocationDisabled).message,
+                        isError = true,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+            is CityInputState.Success -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CitySearchStatus(
+                        message = "تم تحديث الموقع إلى: ${(uiState as CityInputState.Success).locationState.cityName}",
                         isError = false,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -175,21 +213,27 @@ fun CityInputScreen(
                     cityName = "القاهرة",
                     latitude = 30.0444,
                     longitude = 31.2357,
-                    onCitySelected = viewModel::selectCity
+                    onCitySelected = { lat, lon, name ->
+                        viewModel.handleEvent(CityInputEvent.SelectCity(lat, lon, name))
+                    }
                 )
 
                 EgyptianCityCard(
                     cityName = "الإسكندرية",
                     latitude = 31.2001,
                     longitude = 29.9187,
-                    onCitySelected = viewModel::selectCity
+                    onCitySelected = { lat, lon, name ->
+                        viewModel.handleEvent(CityInputEvent.SelectCity(lat, lon, name))
+                    }
                 )
 
                 EgyptianCityCard(
                     cityName = "الجيزة",
                     latitude = 30.0131,
                     longitude = 31.2089,
-                    onCitySelected = viewModel::selectCity
+                    onCitySelected = { lat, lon, name ->
+                        viewModel.handleEvent(CityInputEvent.SelectCity(lat, lon, name))
+                    }
                 )
             }
         }
@@ -205,16 +249,21 @@ private fun CurrentLocationButton(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
     ) {
-        Icon(
-            imageVector = Icons.Default.LocationOn,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("استخدم موقعي الحالي")
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "استخدم موقعي الحالي")
+        }
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun EgyptianCityCard(
     cityName: String,
@@ -230,34 +279,19 @@ private fun EgyptianCityCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Location Icon",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = cityName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            Text(
+                text = cityName,
+                style = MaterialTheme.typography.bodyLarge
+            )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = "Select City",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
 }
-

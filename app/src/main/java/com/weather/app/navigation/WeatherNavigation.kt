@@ -17,16 +17,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.weather.core.viewmodel.SharedWeatherViewModel
-import com.weather.features.cityinput.presentation.CityInputScreen
-import com.weather.features.currentweather.presentation.CurrentWeatherScreen
-import com.weather.features.forecast.presentation.ForecastScreen
+import com.weather.features.cityinput.presentation.screen.CityInputScreen
+import com.weather.features.currentweather.presentation.screen.CurrentWeatherScreen
+import com.weather.features.forecast.presentation.screen.ForecastScreen
 
 
 private fun NavHostController.navigateToRoute(route: String, popUpToStart: Boolean = false) {
