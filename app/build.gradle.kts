@@ -28,6 +28,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "WEATHER_API_KEY", "\"d5068f3e8e1687af8cf6645791f5adb8\"")
         }
         debug {
             buildConfigField("String", "WEATHER_API_KEY", "\"d5068f3e8e1687af8cf6645791f5adb8\"")
@@ -80,8 +81,6 @@ dependencies {
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
-//    implementation(libs.material.icons.core)
-//    implementation(libs.material.icons.extended)
 
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
