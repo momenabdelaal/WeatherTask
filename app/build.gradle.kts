@@ -73,13 +73,17 @@ dependencies {
 
     // Jetpack Compose
     implementation(platform(libs.compose.bom))
-    implementation(libs.androidx.compose.ui.ui)
-    implementation(libs.androidx.compose.ui.ui.graphics)
-    implementation(libs.androidx.compose.ui.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3.material3)
-    implementation(libs.androidx.compose.runtime.runtime)
-    implementation(libs.androidx.compose.foundation.foundation)
-    debugImplementation(libs.androidx.compose.ui.ui.tooling)
+    implementation(libs.runtime)
+    implementation(libs.foundation)
+    implementation(libs.ui)
+    implementation(libs.ui.graphics)
+    implementation(libs.ui.tooling.preview)
+    implementation(libs.material3)
+//    implementation(libs.material.icons.core)
+//    implementation(libs.material.icons.extended)
+
+    debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.ui.test.manifest)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -94,6 +98,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.ui.test.manifest)
+    androidTestImplementation(libs.ui.test.junit4)
 }

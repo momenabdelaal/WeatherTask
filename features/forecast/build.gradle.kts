@@ -60,13 +60,15 @@ dependencies {
 
     // Jetpack Compose
     implementation(platform(libs.compose.bom))
+    implementation(libs.runtime)
+    implementation(libs.foundation)
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
-    implementation(libs.runtime)
-    implementation(libs.foundation)
+    
     debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.ui.test.manifest)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)

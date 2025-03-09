@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.weather.core.model.LocationState
+import com.weather.core.model.LocationStateImpl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -27,40 +28,53 @@ class WeatherDataStore @Inject constructor(
                 is ClassCastException,
                 is IllegalStateException -> {
                     Log.e(TAG, "Data corruption detected: ${exception.message}", exception)
-                    clearLocationData()
+                    clearLocationData(notifyUser = false)
                 }
                 else -> {
                     Log.e(TAG, "Error reading preferences: ${exception.message}", exception)
                 }
             }
+            // Always emit empty preferences on error to allow the app to continue
             emit(emptyPreferences())
         }
 
     /**
      * Saves the last searched location to DataStore
-     * @param location The location state to save
+     * @param location The location state to save. Must be LocationStateImpl.Available, otherwise returns failure
      * @return Result indicating success or failure
+     * @throws IllegalArgumentException if latitude, longitude, or city name are invalid
+     * @throws IllegalStateException if location state is not Available
      */
     suspend fun saveLastLocation(location: LocationState): Result<Unit> {
         return try {
-            // Validate location data
-            if (location.latitude < -90 || location.latitude > 90) {
-                Log.e(TAG, "Invalid latitude value: ${location.latitude}")
-                Result.failure(IllegalArgumentException("قيمة خط العرض غير صالحة"))
-            } else if (location.longitude < -180 || location.longitude > 180) {
-                Log.e(TAG, "Invalid longitude value: ${location.longitude}")
-                Result.failure(IllegalArgumentException("قيمة خط الطول غير صالحة"))
-            } else if (location.cityName.isBlank()) {
-                Log.e(TAG, "City name is blank")
-                Result.failure(IllegalArgumentException("اسم المدينة فارغ"))
-            } else {
-                store.edit { preferences ->
-                    preferences[PreferencesKeys.LAST_LATITUDE] = location.latitude
-                    preferences[PreferencesKeys.LAST_LONGITUDE] = location.longitude
-                    preferences[PreferencesKeys.LAST_CITY_NAME] = location.cityName
+            when (val locationImpl = location as? LocationStateImpl) {
+                is LocationStateImpl.Available -> {
+                    // Validate location data
+                    if (locationImpl.latitude < -90 || locationImpl.latitude > 90) {
+                        Log.e(TAG, "Invalid latitude value: ${locationImpl.latitude}")
+                        Result.failure(IllegalArgumentException("قيمة خط العرض غير صالحة"))
+                    } else if (locationImpl.longitude < -180 || locationImpl.longitude > 180) {
+                        Log.e(TAG, "Invalid longitude value: ${locationImpl.longitude}")
+                        Result.failure(IllegalArgumentException("قيمة خط الطول غير صالحة"))
+                    } else if (locationImpl.cityName.isBlank()) {
+                        Log.e(TAG, "City name is blank")
+                        Result.failure(IllegalArgumentException("اسم المدينة فارغ"))
+                    } else {
+                        store.edit { preferences ->
+                            preferences[PreferencesKeys.LAST_LATITUDE] = locationImpl.latitude
+                            preferences[PreferencesKeys.LAST_LONGITUDE] = locationImpl.longitude
+                            preferences[PreferencesKeys.LAST_CITY_NAME] = locationImpl.cityName
+                        }
+                        Log.d(TAG, "Successfully saved location: ${locationImpl.cityName} (${locationImpl.latitude}, ${locationImpl.longitude})")
+                        Result.success(Unit)
+                    }
                 }
-                Log.d(TAG, "Successfully saved location: ${location.cityName} (${location.latitude}, ${location.longitude})")
-                Result.success(Unit)
+                is LocationStateImpl.Loading,
+                is LocationStateImpl.Unavailable,
+                null -> {
+                    Log.d(TAG, "Cannot save non-available location state")
+                    Result.failure(IllegalStateException("لا يمكن حفظ حالة الموقع غير المتوفرة"))
+                }
             }
         } catch (exception: Exception) {
             Log.e(TAG, "Error saving location: ${exception.message}", exception)
@@ -70,9 +84,10 @@ class WeatherDataStore @Inject constructor(
 
     /**
      * Retrieves the last searched location from DataStore
-     * @return Flow of LocationState or null if no location is saved
+     * @return Flow of LocationState. Emits LocationStateImpl.Loading initially, then LocationStateImpl.Available if valid location exists,
+     *         or LocationStateImpl.Unavailable if no valid location exists or an error occurs
      */
-    fun getLastLocation(): Flow<LocationState?> = data
+    fun getLastLocation(): Flow<LocationStateImpl> = data
         .map { preferences ->
             val latitude = preferences[PreferencesKeys.LAST_LATITUDE]
             val longitude = preferences[PreferencesKeys.LAST_LONGITUDE]
@@ -81,42 +96,45 @@ class WeatherDataStore @Inject constructor(
             when {
                 latitude == null -> {
                     Log.d(TAG, "No latitude found in preferences")
-                    null
+                    LocationStateImpl.Unavailable
                 }
                 longitude == null -> {
                     Log.d(TAG, "No longitude found in preferences")
-                    null
+                    LocationStateImpl.Unavailable
                 }
                 cityName == null -> {
                     Log.d(TAG, "No city name found in preferences")
-                    null
+                    LocationStateImpl.Unavailable
                 }
                 latitude < -90 || latitude > 90 -> {
                     Log.e(TAG, "Invalid latitude value in preferences: $latitude")
-                    null
+                    LocationStateImpl.Unavailable
                 }
                 longitude < -180 || longitude > 180 -> {
                     Log.e(TAG, "Invalid longitude value in preferences: $longitude")
-                    null
+                    LocationStateImpl.Unavailable
                 }
                 cityName.isBlank() -> {
                     Log.e(TAG, "Blank city name in preferences")
-                    null
+                    LocationStateImpl.Unavailable
                 }
                 else -> {
-                    LocationState(
+                    LocationStateImpl.Available(
                         latitude = latitude,
                         longitude = longitude,
                         cityName = cityName
-                    ).also {
-                        Log.d(TAG, "Retrieved last location: ${it.cityName} (${it.latitude}, ${it.longitude})")
+                    ).also { available ->
+                        Log.d(TAG, "Retrieved last location: ${available.cityName} (${available.latitude}, ${available.longitude})")
                     }
                 }
             }
         }
         .catch { exception ->
             Log.e(TAG, "Error retrieving last location: ${exception.message}", exception)
-            emit(null)
+            emit(LocationStateImpl.Unavailable)
+        }
+        .onStart { 
+            emit(LocationStateImpl.Loading)
         }
 
     /**

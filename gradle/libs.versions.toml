@@ -24,57 +24,23 @@ mockito-core = "5.8.0"
 mockito-kotlin = "5.2.1"
 coilCompose = "2.5.0"
 datastore = "1.0.0"
+compose-bom-version = "2024.01.00"
+material3 = "1.2.1"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
-androidx-compose-foundation-foundation2 = { module = "androidx.compose.foundation:foundation" }
-androidx-compose-foundation-foundation3 = { module = "androidx.compose.foundation:foundation" }
-androidx-compose-foundation-foundation4 = { module = "androidx.compose.foundation:foundation" }
-androidx-compose-material3-material32 = { module = "androidx.compose.material3:material3" }
-androidx-compose-material3-material33 = { module = "androidx.compose.material3:material3" }
-androidx-compose-material3-material34 = { module = "androidx.compose.material3:material3" }
-androidx-compose-runtime-runtime = { module = "androidx.compose.runtime:runtime" }
-androidx-compose-foundation-foundation = { module = "androidx.compose.foundation:foundation" }
-androidx-compose-material3-material3 = { module = "androidx.compose.material3:material3" }
-androidx-compose-runtime-runtime2 = { module = "androidx.compose.runtime:runtime" }
-androidx-compose-runtime-runtime3 = { module = "androidx.compose.runtime:runtime" }
-androidx-compose-runtime-runtime4 = { module = "androidx.compose.runtime:runtime" }
-androidx-compose-ui-ui = { module = "androidx.compose.ui:ui" }
-androidx-compose-ui-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
-androidx-compose-ui-ui-graphics2 = { module = "androidx.compose.ui:ui-graphics" }
-androidx-compose-ui-ui-graphics3 = { module = "androidx.compose.ui:ui-graphics" }
-androidx-compose-ui-ui-graphics4 = { module = "androidx.compose.ui:ui-graphics" }
-androidx-compose-ui-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
-androidx-compose-ui-ui-test-junit42 = { module = "androidx.compose.ui:ui-test-junit4" }
-androidx-compose-ui-ui-test-junit43 = { module = "androidx.compose.ui:ui-test-junit4" }
-androidx-compose-ui-ui-test-junit44 = { module = "androidx.compose.ui:ui-test-junit4" }
-androidx-compose-ui-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-compose-ui-ui-test-manifest2 = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-compose-ui-ui-test-manifest3 = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-compose-ui-ui-test-manifest4 = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-compose-ui-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
-androidx-compose-ui-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-compose-ui-ui-tooling-preview2 = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-compose-ui-ui-tooling-preview3 = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-compose-ui-ui-tooling-preview4 = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-compose-ui-ui-tooling2 = { module = "androidx.compose.ui:ui-tooling" }
-androidx-compose-ui-ui-tooling3 = { module = "androidx.compose.ui:ui-tooling" }
-androidx-compose-ui-ui-tooling4 = { module = "androidx.compose.ui:ui-tooling" }
-androidx-compose-ui-ui2 = { module = "androidx.compose.ui:ui" }
-androidx-compose-ui-ui3 = { module = "androidx.compose.ui:ui" }
-androidx-compose-ui-ui4 = { module = "androidx.compose.ui:ui" }
+
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
-androidx-foundation = { module = "androidx.compose.foundation:foundation" }
-androidx-runtime = { module = "androidx.compose.runtime:runtime" }
-androidx-material3 = { module = "androidx.compose.material3:material3" }
-androidx-ui = { module = "androidx.compose.ui:ui" }
-androidx-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
-androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
-androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
-androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 foundation = { module = "androidx.compose.foundation:foundation" }
+runtime = { module = "androidx.compose.runtime:runtime" }
+material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+ui = { module = "androidx.compose.ui:ui" }
+ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
@@ -82,6 +48,8 @@ androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtim
 # Compose
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 
 # Navigation
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
@@ -91,8 +59,7 @@ hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", ve
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 
-# Network
-material3 = { module = "androidx.compose.material3:material3" }
+# Location Services
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
@@ -113,13 +80,8 @@ androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-j
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito-core" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito-kotlin" }
-runtime = { module = "androidx.compose.runtime:runtime" }
-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
-ui = { module = "androidx.compose.ui:ui" }
-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
