@@ -296,4 +296,95 @@ class CityInputViewModelTest {
         coVerify(exactly = 1) { dataStore.saveLastLocation(any()) }
         assertEquals(CityInputState.Error(errorMessage), viewModel.uiState.value)
     }
+
+    @Test
+    fun `when getting current location fails with permission denied, should emit permission required state`() = runTest {
+        // Given
+        val errorMessage = "يرجى منح إذن الموقع"
+        coEvery { getLocationUseCase() } returns LocationResult.Error.PermissionDenied
+        every { errorHandler.getLocationError(any<SecurityException>()) } returns errorMessage
+
+        // When
+        viewModel.handleEvent(CityInputEvent.GetCurrentLocation)
+
+        // Then
+        assertEquals(CityInputState.PermissionRequired(errorMessage), viewModel.uiState.value)
+    }
+
+    @Test
+    fun `when getting current location fails with location disabled, should emit location disabled state`() = runTest {
+        // Given
+        val errorMessage = "خدمات الموقع معطلة"
+        coEvery { getLocationUseCase() } returns LocationResult.Error.LocationDisabled
+        every { errorHandler.getLocationError(any<IllegalStateException>()) } returns errorMessage
+
+        // When
+        viewModel.handleEvent(CityInputEvent.GetCurrentLocation)
+
+        // Then
+        assertEquals(CityInputState.LocationDisabled(errorMessage), viewModel.uiState.value)
+    }
+
+    @Test
+    fun `when requesting location permission, should call locationPermissionHelper`() = runTest {
+        // Given
+        val activity = mockk<Activity>(relaxed = true)
+
+        // When
+        viewModel.handleEvent(CityInputEvent.RequestLocationPermission(activity))
+
+        // Then
+        verify(exactly = 1) { locationPermissionHelper.requestLocationPermission(activity, LOCATION_PERMISSION_REQUEST_CODE) }
+    }
+
+    @Test
+    fun `when opening location settings, should call locationPermissionHelper`() = runTest {
+        // Given
+        val activity = mockk<Activity>(relaxed = true)
+
+        // When
+        viewModel.handleEvent(CityInputEvent.OpenLocationSettings(activity))
+
+        // Then
+        verify(exactly = 1) { locationPermissionHelper.openLocationSettings(activity) }
+    }
+
+    @Test
+    fun `when opening app settings, should call locationPermissionHelper`() = runTest {
+        // Given
+        val activity = mockk<Activity>(relaxed = true)
+
+        // When
+        viewModel.openAppSettings(activity)
+
+        // Then
+        verify(exactly = 1) { locationPermissionHelper.openAppSettings(activity) }
+    }
+
+    @Test
+    fun `when selecting city, should update location state and save to DataStore`() = runTest {
+        // Given
+        val cityName = "Cairo"
+        val latitude = 30.0444
+        val longitude = 31.2357
+
+        // When
+        viewModel.handleEvent(CityInputEvent.SelectCity(latitude, longitude, cityName))
+
+        // Then
+        coVerify(exactly = 1) {
+            dataStore.saveLastLocation(match { location ->
+                location is LocationStateImpl.Available &&
+                location.latitude == latitude &&
+                location.longitude == longitude &&
+                location.cityName == cityName
+            })
+        }
+        assertEquals(
+            CityInputState.Success(
+                LocationStateImpl.Available(latitude, longitude, cityName)
+            ),
+            viewModel.uiState.value
+        )
+    }
 }

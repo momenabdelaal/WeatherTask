@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true -> {
                 // Location permission granted, request location update
                 sharedViewModel.getCurrentLocation()
+
             }
             else -> {
                 // Location permission denied, handle accordingly
